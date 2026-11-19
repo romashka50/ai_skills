@@ -222,7 +222,7 @@ change-impact-map
 
 ```
 skills/
-├── visualisation/          SKILL.md, template.html
+├── visualisation/          SKILL.md, ENVIRONMENT-AND-SCOPE.md, SUBAGENT-FLOW.md, template.html
 ├── component-usage-tree/   SKILL.md, scripts/, references/, assets/template.html
 ├── change-impact-map/      SKILL.md
 └── guided-implementation/  SKILL.md, template.html

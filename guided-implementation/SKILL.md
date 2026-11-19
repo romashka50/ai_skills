@@ -1,13 +1,7 @@
 ---
 name: guided-implementation
 description: >
-  Plan a feature with the user, then hand them an ordered, file-by-file build
-  guide they apply by hand. Grills the idea (with GLOSSARY.md updates when
-  domain terms change), finds every file and side effect, then writes one HTML
-  page: which file to touch first, what to add, a code snippet and explanation
-  per step. Use when the user wants to implement a feature, is unsure which
-  files or side effects are involved, or wants to understand and type the
-  change themselves instead of delegating it to the agent.
+  Plan a feature with the user, then write an ordered file-by-file build guide (HTML, snippets, explanations) they apply by hand. Grills the idea, updates GLOSSARY.md, finds affected files and side effects. Use when implementing a feature and unsure which files it involves, or to understand the change instead of delegating it.
 ---
 
 # guided-implementation
@@ -18,7 +12,7 @@ Source files stay untouched by the agent during this skill. The only files it wr
 
 ## 0. Check the environment
 
-Do `../visualisation/SKILL.md` §0 (detect OS, pick the browser-open command, use portable file tools).
+Do `../visualisation/ENVIRONMENT-AND-SCOPE.md` §0 (detect OS, pick the browser-open command, use portable file tools).
 
 ## 1. Capture the idea and map the ground
 
@@ -54,6 +48,8 @@ The Check line of every step and the final "Done when" run the project's own tas
 Completion criterion: a verify table with one row per task (typecheck, lint, format, test, build when relevant): the exact command, the `package.json` or config it came from, and whether it was a script, an own command, or the user's pick.
 
 ## 2. Grill
+
+**Small scope** (the feature touches fewer than 3 files and adds no domain terms): run `grilling` only, search the code inline instead of dispatching a sub-agent, and keep the page to the sections that apply. This saves tokens.
 
 Pick the interview by what the feature touches:
 
