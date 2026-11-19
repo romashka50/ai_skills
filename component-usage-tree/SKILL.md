@@ -15,15 +15,15 @@ The bundled scripts do the deterministic part (changed files, import graph, usag
 ## Workflow
 
 ### 1. Check the environment and pin down the scope
-First do `../visualisation/ENVIRONMENT-AND-SCOPE.md` §0 (detect OS, pick the Python command and browser-open command). Then:
+First do `../visualisation/SKILL.md` §0 (detect OS, pick the Python command and browser-open command). Then:
 
-Use `../visualisation/ENVIRONMENT-AND-SCOPE.md` §1 (Pin the scope): same prompt-to-git-source table, same "narrow by subject, list what you left out" rule. Default to "everything on this branch vs its merge-base, including uncommitted work". Map the result to the analyzer flags: `--base <ref>`, `--head <ref>` (default is the working tree), `--depth N` (consumer hops, default 3).
+Use `../visualisation/SKILL.md` §1 (Pin the scope): same prompt-to-git-source table, same "narrow by subject, list what you left out" rule. Default to "everything on this branch vs its merge-base, including uncommitted work". Map the result to the analyzer flags: `--base <ref>`, `--head <ref>` (default is the working tree), `--depth N` (consumer hops, default 3).
 
 ### 2. Run the analyzer
 ```bash
 <python> <skills>/component-usage-tree/scripts/analyze_changes.py --repo <repo-root> --out impact-graph.json
 ```
-Choose `<python>` and `<skills>` as `../visualisation/ENVIRONMENT-AND-SCOPE.md` §0 says (`python3` on macOS and Linux, `python` or `py -3` on Windows; `<skills>` is the parent folder of this skill's folder). Run the command with the repository root as the working directory. The scripts need only Python 3 and git, and write UTF-8 on every OS.
+Choose `<python>` and `<skills>` as `../visualisation/SKILL.md` §0 says (`python3` on macOS and Linux, `python` or `py -3` on Windows; `<skills>` is the parent folder of this skill's folder). Run the command with the repository root as the working directory. The scripts need only Python 3 and git, and write UTF-8 on every OS.
 It prints one summary line. If it reports no changed source files, check `--base`. It supports JS/TS/JSX/TSX, Vue, Svelte and Python, resolves `tsconfig` path aliases, follows re-exports through barrel `index` files, and handles deleted and renamed files.
 
 If the repo already has a stronger graph source (for example codegraph, dependency-cruiser, madge, an `.understand-anything/knowledge-graph.json`, or a TypeScript AST/MCP tool) you may use it to fill in gaps, but keep the output in the same JSON shape so the viewer still works. Mention in the summary which source you used.

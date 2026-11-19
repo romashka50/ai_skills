@@ -1,8 +1,11 @@
 # AI Skills: Understand Every Change
 
-A small, focused set of [Claude Code](https://claude.com/claude-code) skills that answer one question after code changes: **"What exactly changed, why, and what could break?"**
+Four [Claude Code](https://claude.com/claude-code) skills that help you understand code, before and after you change it:
 
-Reading a raw diff tells you *what* lines moved. These skills turn a diff, commit, branch or PR into a single self-contained HTML page you can open in a browser, with before/after views, plain-language reasons for each change, and a clickable map of every place the changed code is used.
+- **After a change:** *"What exactly changed, why, and what could break?"* Three skills turn a diff, commit, branch or PR into one self-contained HTML page with before/after views, plain-language reasons for each change, and a clickable map of everywhere the changed code is used.
+- **Before a change:** *"Which files do I touch, in what order, and why?"* One skill interviews you about a new feature, then writes a file-by-file build guide that you apply by hand.
+
+Every skill writes a single HTML file you open in a browser. No server, no build step.
 
 ## Contents
 
@@ -17,18 +20,33 @@ Reading a raw diff tells you *what* lines moved. These skills turn a diff, commi
 - [How the skills fit together](#how-the-skills-fit-together)
 - [Repository layout](#repository-layout)
 - [Requirements](#requirements)
+- [Inspired by](#inspired-by)
 
 ## Quick start
 
 1. Put the skill folders where your agent loads skills. For Claude Code, copy or symlink them into `~/.claude/skills/` (all user projects) or `<project>/.claude/skills/` (one project):
 
    ```bash
-   cp -R visualisation component-usage-tree change-impact-map ~/.claude/skills/
+   cp -R visualisation component-usage-tree change-impact-map guided-implementation ~/.claude/skills/
    ```
 
-   Keep the three folders side by side. The skills reference each other by relative path (`../visualisation/SKILL.md`), so `change-impact-map` and `component-usage-tree` need `visualisation` next to them.
+   Keep all four folders side by side. The skills reference each other by relative path (`../visualisation/SKILL.md`), so `change-impact-map`, `component-usage-tree` and `guided-implementation` need `visualisation` next to them. `guided-implementation` also needs skills from another collection, [mattpocock/skills](https://github.com/mattpocock/skills). Install them too (next step).
 
-2. Open a repo and run a skill. The text after the slash command says *what* to look at:
+2. **Only for `guided-implementation`:** install the [mattpocock/skills](https://github.com/mattpocock/skills) collection, which provides `grilling` and `domain-modeling` (required) and `code-review` (optional, used for the final review). Follow the install section of that repository; at the time of writing it offers:
+
+   ```bash
+   claude plugin install mattpocock-skills@claude-plugins-official
+   ```
+
+   or, for any other agent or for editable copies:
+
+   ```bash
+   npx skills@latest add mattpocock/skills -a <agent>
+   ```
+
+   Without them `guided-implementation` cannot run its interview. The other three skills work without them.
+
+3. Open a repo and run a skill. The text after the slash command says *what* to look at:
 
    ```text
    /visualisation uncommitted changes
@@ -38,7 +56,7 @@ Reading a raw diff tells you *what* lines moved. These skills turn a diff, commi
 
    Without a slash command, plain language works too: *"Explain everything I changed and who it affects."*
 
-3. The agent writes one HTML file and opens it in your browser. No server, no build step.
+4. The agent writes one HTML file to `.visual-guides/` in your repo (the file name starts with the date) and opens it in your browser. If `.visual-guides/` is not git-ignored, it tells you.
 
 ## Which skill should I use?
 
@@ -52,7 +70,7 @@ Reading a raw diff tells you *what* lines moved. These skills turn a diff, commi
 
 ## Reference
 
-All three skills are triggered by what you say. Each one's `description` tells the agent when to pick it, so you rarely need the slash command.
+All four skills are triggered by what you say. Each one's `description` tells the agent when to pick it, so you rarely need the slash command.
 
 ### visualisation
 
@@ -76,7 +94,8 @@ All three skills are triggered by what you say. Each one's `description` tells t
 
 **Good to know**
 - When no evidence explains a change, the guide says **"Reason not recorded"** rather than inventing a rationale.
-- Large scopes switch to a parallel subagent flow that splits the walkthrough, diagrams and proof across agents.
+- Large scopes (more than about 2 files or 150 changed lines) switch to a parallel subagent flow that splits the walkthrough, diagrams and proof across agents.
+- Diagrams render at readable size and long chains wrap into rows, so you should not need to zoom.
 - Works on macOS, Linux and Windows; it detects the OS and picks portable commands.
 
 **Try it**: type the slash command, then say what to look at. The wording picks the scope.
@@ -145,10 +164,10 @@ Under the hood the scope becomes analyzer flags `--base <ref>`, `--head <ref>` a
 **What you get**
 - The complete [visualisation](#visualisation) guide.
 - The complete [component-usage-tree](#component-usage-tree) viewer.
-- Both combined, so each changed file links its explanation to its consumers.
+- Both combined: clicking a file in the tree shows its before, after, why and its consumers.
 
 **Good to know**
-- It composes the other two. It reuses their templates and scripts instead of duplicating them.
+- It composes the other two. It reuses their template, scripts and rules instead of duplicating them.
 - It is the best default for reviewing a branch.
 
 **Try it**: type the slash command, then say what to look at. The wording picks the scope.
@@ -177,17 +196,21 @@ Plain language works too: *"Explain what changed, why, and what it affects. I'm 
 2. Grills you on the idea. With new domain terms it runs `grilling` plus `domain-modeling` (like `/grill-with-docs`) and records decisions in `GLOSSARY.md`; for purely technical work it runs `grilling` alone (like `/grill-me`).
 3. Finds every file to touch, every consumer of edited code, and contracts, tests and docs affected.
 4. Orders the steps so the project works after each one: prefactor first, then one thin slice through every layer.
-5. Builds one HTML page: decisions, a flow diagram, and one card per step with the file, a paste-ready snippet, an explanation, a check command and a progress checkbox.
-6. When you finish, reviews your result against the plan.
+5. Builds one HTML page: the decisions, a colour-coded map of the steps (new file green, edited yellow, deleted red, test brown), and one card per step with the file, a paste-ready snippet, an explanation, a check command and a progress checkbox.
+6. After you finish editing, reviews your result against the plan with `/code-review` and `/visualisation`.
 
 **Try it**
 
 | You type | What it does |
 |---|---|
 | `/guided-implementation add CSV export to the reports page` | Full flow: grill, impact sweep, build guide. |
-| `/guided-implementation add rate limiting to the API, I'm not sure what it touches` | Puts the side-effect sweep first. |
+| `/guided-implementation add rate limiting to the API, I'm not sure what it touches` | Same flow. The side-effect sweep lists every consumer, contract, test and doc the change affects. |
 | `/guided-implementation step 3 failed` | Compares your file with the step's snippet and explains the gap. |
 | `/guided-implementation done` | Reviews your changes against the plan. |
+
+**Needs** the [mattpocock/skills](https://github.com/mattpocock/skills) collection (`grilling`, `domain-modeling`; `code-review` optional). Install it first, see [Quick start](#quick-start).
+
+Small features (fewer than 3 files, no new domain terms) use a lighter flow: `grilling` only, no sub-agent. The agent never edits your source files during this skill; it writes only the guide, plus `GLOSSARY.md` and ADRs when decisions are recorded.
 
 Output goes to `.visual-guides/<date>-<slug>-plan.html`.
 
@@ -195,7 +218,7 @@ Output goes to `.visual-guides/<date>-<slug>-plan.html`.
 
 ## How the scope is chosen
 
-There are no flags or modes to switch on. The skill reads your wording and maps it to a source:
+Applies to `visualisation`, `component-usage-tree` and `change-impact-map` (`guided-implementation` starts from your feature description instead). There are no flags or modes to switch on. The skill reads your wording and maps it to a source:
 
 | Your wording | Source used | Mode |
 |---|---|---|
@@ -214,15 +237,20 @@ If your wording fits two different sets of files, the skill asks which you mean.
 change-impact-map
 ├── visualisation          → the "what and why" guide
 └── component-usage-tree   → the "who uses it" graph (scripts + viewer)
+
+guided-implementation      → plans a feature before you write it
+├── grilling               → interview (external skill)
+├── domain-modeling        → GLOSSARY.md and ADRs (external skill)
+└── visualisation          → shared environment and scope rules, page template
 ```
 
-`visualisation` and `component-usage-tree` also work alone. `change-impact-map` runs both and merges the result.
+`visualisation` and `component-usage-tree` also work alone. `change-impact-map` runs both and merges the result. After you finish a planned feature, `guided-implementation` hands the review to `/code-review` and `/visualisation`.
 
 ## Repository layout
 
 ```
 skills/
-├── visualisation/          SKILL.md, ENVIRONMENT-AND-SCOPE.md, SUBAGENT-FLOW.md, template.html
+├── visualisation/          SKILL.md, template.html
 ├── component-usage-tree/   SKILL.md, scripts/, references/, assets/template.html
 ├── change-impact-map/      SKILL.md
 └── guided-implementation/  SKILL.md, template.html
@@ -233,4 +261,15 @@ skills/
 - An agent that supports skills (built for Claude Code).
 - `git`, for diffs, commits and branches.
 - Python 3, for the usage-tree scripts (the visualisation guide alone does not need it).
-- A web browser to open the generated HTML.
+- For `guided-implementation`: the [mattpocock/skills](https://github.com/mattpocock/skills) collection installed (see [Quick start](#quick-start)). It provides `grilling` and `domain-modeling` (required) and `code-review` (optional).
+- A web browser to open the generated HTML. The pages load Tailwind and Mermaid from a CDN, so they need a network connection to render fully.
+
+## Inspired by
+
+These skills build on other people's work.
+
+| Skill | Inspired by | What was taken |
+|---|---|---|
+| `guided-implementation` | `grilling` and `domain-modeling` from [mattpocock/skills](https://github.com/mattpocock/skills) | The skill calls them directly. The interview (a design tree worked in rounds until nothing is left open) and the glossary and ADR recording are theirs. The grill-me / grill-with-docs choice mirrors those two skills. |
+| This README | [mattpocock/skills](https://github.com/mattpocock/skills) | Used as an example of how to structure a skills README: install, why, then a reference with one entry per skill. Nothing was copied. |
+
