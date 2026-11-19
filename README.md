@@ -1,6 +1,6 @@
 # AI Skills: Understand Every Change
 
-Four [Claude Code](https://claude.com/claude-code) skills that help you understand code, before and after you change it:
+Four AI agent skills that help you understand code, before and after you change it:
 
 - **After a change:** *"What exactly changed, why, and what could break?"* Three skills turn a diff, commit, branch or PR into one self-contained HTML page with before/after views, plain-language reasons for each change, and a clickable map of everywhere the changed code is used.
 - **Before a change:** *"Which files do I touch, in what order, and why?"* One skill interviews you about a new feature, then writes a file-by-file build guide that you apply by hand.
@@ -24,10 +24,18 @@ Every skill writes a single HTML file you open in a browser. No server, no build
 
 ## Quick start
 
-1. Put the skill folders where your agent loads skills. For Claude Code, copy or symlink them into `~/.claude/skills/` (all user projects) or `<project>/.claude/skills/` (one project):
+1. Copy the skill folders into the skills directory your agent reads. Each skill is a folder with a `SKILL.md` file, the common format for agent skills, so any agent that supports it can use them. Check your agent's documentation for its skills path. Examples:
+
+   | Agent or setup | Skills directory |
+   |---|---|
+   | Claude Code, all your projects | `~/.claude/skills/` |
+   | Claude Code, one project | `<project>/.claude/skills/` |
+   | A shared folder several agents read | `~/.agents/skills/` (`~/.claude/skills` can be a symlink to it) |
+   | Any other agent | the folder its documentation names for skills |
 
    ```bash
-   cp -R visualisation component-usage-tree change-impact-map guided-implementation ~/.claude/skills/
+   # replace <skills-dir> with the directory from the table
+   cp -R visualisation component-usage-tree change-impact-map guided-implementation <skills-dir>/
    ```
 
    Keep all four folders side by side. The skills reference each other by relative path (`../visualisation/SKILL.md`), so `change-impact-map`, `component-usage-tree` and `guided-implementation` need `visualisation` next to them. `guided-implementation` also needs skills from another collection, [mattpocock/skills](https://github.com/mattpocock/skills). Install them too (next step).
@@ -46,7 +54,7 @@ Every skill writes a single HTML file you open in a browser. No server, no build
 
    Without them `guided-implementation` cannot run its interview. The other three skills work without them.
 
-3. Open a repo and run a skill. The text after the slash command says *what* to look at:
+3. Open a repo and run a skill. In Claude Code, type the slash command; the text after it says *what* to look at. In other agents, describe the same thing in plain language, for example *"Make a visual guide of my uncommitted changes"*:
 
    ```text
    /visualisation uncommitted changes
@@ -258,7 +266,7 @@ skills/
 
 ## Requirements
 
-- An agent that supports skills (built for Claude Code).
+- An agent that supports `SKILL.md` skills. Written for Claude Code; slash commands such as `/visualisation` are Claude Code syntax, and in other agents you describe the task in words.
 - `git`, for diffs, commits and branches.
 - Python 3, for the usage-tree scripts (the visualisation guide alone does not need it).
 - For `guided-implementation`: the [mattpocock/skills](https://github.com/mattpocock/skills) collection installed (see [Quick start](#quick-start)). It provides `grilling` and `domain-modeling` (required) and `code-review` (optional).
