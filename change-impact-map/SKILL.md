@@ -17,15 +17,15 @@ One run produces **the full visualisation guide plus a clickable usage tree**, i
 ## Workflow
 
 ### 1. Check the environment and pin down the scope
-First do `../visualisation/ENVIRONMENT-AND-SCOPE.md` §0 (detect OS, pick the Python command and browser-open command). Then:
+First do `../visualisation/SKILL.md` §0 (detect OS, pick the Python command and browser-open command). Then:
 
-Use `../visualisation/ENVIRONMENT-AND-SCOPE.md` §1 (Pin the scope): same prompt-to-git-source table, same "narrow by subject, list what you left out" rule. Default to "everything on this branch vs its merge-base, including uncommitted work". Map the result to the analyzer flags: `--base <ref>`, `--head <ref>` (default is the working tree), `--depth N` (consumer hops, default 3).
+Use `../visualisation/SKILL.md` §1 (Pin the scope): same prompt-to-git-source table, same "narrow by subject, list what you left out" rule. Default to "everything on this branch vs its merge-base, including uncommitted work". Map the result to the analyzer flags: `--base <ref>`, `--head <ref>` (default is the working tree), `--depth N` (consumer hops, default 3).
 
 ### 2. Run the analyzer
 ```bash
 <python> <skills>/component-usage-tree/scripts/analyze_changes.py --repo <repo-root> --out impact-graph.json
 ```
-Choose `<python>` and `<skills>` as `../visualisation/ENVIRONMENT-AND-SCOPE.md` §0 says (`python3` on macOS and Linux, `python` or `py -3` on Windows; `<skills>` is the parent folder of this skill's folder). Run the command with the repository root as the working directory. The scripts need only Python 3 and git, and write UTF-8 on every OS.
+Choose `<python>` and `<skills>` as `../visualisation/SKILL.md` §0 says (`python3` on macOS and Linux, `python` or `py -3` on Windows; `<skills>` is the parent folder of this skill's folder). Run the command with the repository root as the working directory. The scripts need only Python 3 and git, and write UTF-8 on every OS.
 Details of the analyzer and its limits: `../component-usage-tree/SKILL.md` step 2. It prints one summary line. If it reports no changed source files, check `--base`. It supports JS/TS/JSX/TSX, Vue, Svelte and Python, resolves `tsconfig` path aliases, follows re-exports through barrel `index` files, and handles deleted and renamed files.
 
 If the repo already has a stronger graph source (for example codegraph, dependency-cruiser, madge, an `.understand-anything/knowledge-graph.json`, or a TypeScript AST/MCP tool) you may use it to fill in gaps, but keep the output in the same JSON shape so the viewer still works. Mention in the summary which source you used.
@@ -59,7 +59,7 @@ Two rules make the join work:
 1. Every `<details class="file">` carries `data-node="<repo-relative path>"`, exactly the node `id` in the graph (for a renamed file, the new path). This is how a tree node finds its before/after/why block.
 2. Keep the `<!-- IMPACT_MAP -->` marker where the template puts it, between Before → after and Walkthrough. The builder replaces it with the tree.
 
-Large scope: use `../visualisation/SUBAGENT-FLOW.md`, and tell each annotator the `data-node` rule.
+Large scope: use the subagent flow in `../visualisation/SKILL.md`, and tell each annotator the `data-node` rule.
 Save the guide as `.visual-guides/<YYYY-MM-DD>-<slug>.guide.html` (an intermediate; the deliverable is step 5's output).
 
 ### 5. Build the combined page

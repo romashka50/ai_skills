@@ -11,7 +11,10 @@
   import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
   const dark = matchMedia("(prefers-color-scheme: dark)").matches;
   mermaid.initialize({ startOnLoad: true, theme: dark ? "dark" : "neutral", securityLevel: "loose",
-                       flowchart: { curve: "basis", htmlLabels: true } });
+                       themeVariables: { fontSize: "16px" },
+                       // useMaxWidth:false renders at natural size; Mermaid then never shrinks text to fit the card.
+                       flowchart: { curve: "basis", htmlLabels: true, useMaxWidth: false, nodeSpacing: 30, rankSpacing: 40 },
+                       sequence: { useMaxWidth: false }, state: { useMaxWidth: false } });
 </script>
 <style>
   :root {
@@ -43,6 +46,7 @@
   .callout { background: var(--warn-bg); color: var(--warn-fg); border-radius: 8px; padding: 8px 14px; margin: 12px 0; }
   .mermaid-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-top: 12px; overflow-x: auto; }
   .mermaid-card .mermaid { display: flex; justify-content: center; }
+  .mermaid-card svg { max-width: none; height: auto; } /* natural size: text stays readable */
   table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); }
   th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
   th { font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
@@ -50,6 +54,18 @@
   .badge.create { background: var(--add-bg); color: var(--add-fg); }
   .badge.edit { background: #e4e9fb; color: #2a45a0; }
   .badge.test { background: var(--warn-bg); color: var(--warn-fg); }
+  .chips { list-style: none; margin: 12px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+  .chip a { display: block; text-decoration: none; color: var(--text); background: var(--surface); border: 1.5px solid var(--text); border-radius: 8px; padding: 8px 12px; height: 100%; }
+  .chip.new a { border: 3px solid var(--accent); }
+  .chip.test a { border-color: #b7791f; }
+  .chip b { color: var(--accent); margin-right: 6px; font-size: 1.05rem; }
+  .chip .cl { font-size: .95rem; }
+  .chip.new a { background: #e4e9fb; } .chip.test a { background: var(--warn-bg); }
+  @media (prefers-color-scheme: dark) { .chip.new a { background: #232c4d; } }
+  .legend .sw { display: inline-block; width: 28px; height: 16px; border-radius: 4px; vertical-align: -3px; margin-right: 6px; border: 1.5px solid var(--text); background: var(--surface); }
+  .legend .sw.new { border: 3px solid var(--accent); background: #e4e9fb; }
+  .legend .sw.test { border: 1.5px solid #b7791f; background: var(--warn-bg); }
+  .chip code { display: block; color: var(--muted); font-size: .8rem; margin-top: 2px; overflow-wrap: anywhere; }
   .progress { position: sticky; top: 0; background: var(--bg); padding: 8px 0; z-index: 5; color: var(--muted); font-size: .9rem; border-bottom: 1px solid var(--border); }
 
   /* Steps */
@@ -71,6 +87,25 @@
   .explain { margin: 8px 0 0; padding-left: 1.2em; } .explain li { margin: 4px 0; }
   .check { background: var(--note-bg); border-left: 3px solid var(--accent); padding: 6px 12px; border-radius: 4px; }
   .legend { display: flex; flex-wrap: wrap; gap: 16px; color: var(--muted); font-size: .85rem; margin: 12px 0; }
+  /* File status colours: new = green, edited = yellow, deleted = red, test = brown */
+  :root { --new-bg:#e1f5e8; --new-bd:#1f9d55; --new-fg:#116b32; --edit-bg:#fff3bf; --edit-bd:#d4a017; --edit-fg:#7a5200;
+          --del-bg2:#fde4e2; --del-bd:#dc2626; --del-fg2:#a3271f; --test-bg:#efe3d6; --test-bd:#8b5a2b; --test-fg:#5c3a1a; }
+  @media (prefers-color-scheme: dark) { :root { --new-bg:#15301f; --new-bd:#3fbf78; --new-fg:#7fd99b; --edit-bg:#3a2e12; --edit-bd:#e0b43c; --edit-fg:#f0c674;
+          --del-bg2:#3a1a19; --del-bd:#ef6b61; --del-fg2:#ff9a92; --test-bg:#3b2d22; --test-bd:#c08a5a; --test-fg:#e6c3a0; } }
+  .chip a { border-width: 1.5px; }
+  .chip.new a { background: var(--new-bg); border: 3px solid var(--new-bd); }
+  .chip.edit a { background: var(--edit-bg); border: 3px solid var(--edit-bd); }
+  .chip.del a { background: var(--del-bg2); border: 3px solid var(--del-bd); }
+  .chip.test a { background: var(--test-bg); border: 3px solid var(--test-bd); }
+  .badge.create { background: var(--new-bg); color: var(--new-fg); }
+  .badge.edit { background: var(--edit-bg); color: var(--edit-fg); }
+  .badge.delete { background: var(--del-bg2); color: var(--del-fg2); }
+  .badge.test { background: var(--test-bg); color: var(--test-fg); }
+  .legend .sw { border-width: 3px; }
+  .legend .sw.new { background: var(--new-bg); border-color: var(--new-bd); }
+  .legend .sw.edit { background: var(--edit-bg); border-color: var(--edit-bd); }
+  .legend .sw.del { background: var(--del-bg2); border-color: var(--del-bd); }
+  .legend .sw.test { background: var(--test-bg); border-color: var(--test-bd); }
 </style>
 </head>
 <body>
@@ -89,15 +124,13 @@
   <p class="meta">Glossary terms added or changed: <code>{{TERM}}</code> (see <code>GLOSSARY.md</code>)</p>
 
   <h2 id="map">Map of the work</h2>
-  <div class="legend"><span>heavy blue border = new file</span><span>plain = edited file</span><span>amber = test</span></div>
-  <div class="mermaid-card"><pre class="mermaid">
-    flowchart LR
-      S1["1 · {{file}}"] --> S2["2 · {{file}}"] --> S3["3 · {{file}}"]
-      classDef new stroke:#3557c4,stroke-width:3px;
-      classDef test stroke:#b7791f,stroke-width:2px;
-      class S2 new
-      class S3 test
-  </pre></div>
+  <div class="legend"><span><i class="sw new"></i>new file (green)</span><span><i class="sw edit"></i>edited file (yellow)</span><span><i class="sw del"></i>deleted file (red)</span><span><i class="sw test"></i>test file (brown)</span></div>
+  <!-- Chip classes: new (green), edit (yellow), del (red), test (brown). One chip per step, in order. The grid wraps to new rows, so the map stays readable at any number of steps. -->
+  <ol class="chips">
+    <li class="chip new"><a href="#step-1"><b>1</b><span class="cl">{{short role}}</span><code>{{file name}}</code></a></li>
+    <li class="chip edit"><a href="#step-2"><b>2</b><span class="cl">{{short role}}</span><code>{{file name}}</code></a></li>
+    <li class="chip test"><a href="#step-3"><b>3</b><span class="cl">{{short role}}</span><code>{{file name}}</code></a></li>
+  </ol>
   <table style="margin-top:12px">
     <tr><th>#</th><th>File</th><th>Kind</th><th>Why</th></tr>
     <tr><td>1</td><td><code>{{FILE}}</code></td><td><span class="badge edit">edit</span></td><td>{{WHY}}</td></tr>
@@ -111,7 +144,7 @@
     <summary>
       <input type="checkbox" class="tick" aria-label="Step {{N}} done">
       <span class="num">{{N}}</span><span class="path">{{FILE PATH}}</span>
-      <span class="badge {{create|edit|test}}">{{create|edit|test}}</span>
+      <span class="badge {{create|edit|delete|test}}">{{create|edit|delete|test}}</span>
     </summary>
     <div class="step-body">
       <h4>Where</h4><p>{{location in the file}}</p>

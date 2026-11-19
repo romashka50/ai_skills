@@ -12,7 +12,7 @@ Source files stay untouched by the agent during this skill. The only files it wr
 
 ## 0. Check the environment
 
-Do `../visualisation/ENVIRONMENT-AND-SCOPE.md` §0 (detect OS, pick the browser-open command, use portable file tools).
+Do `../visualisation/SKILL.md` §0 (detect OS, pick the browser-open command, use portable file tools).
 
 ## 1. Capture the idea and map the ground
 
@@ -106,12 +106,14 @@ Start from [`template.html`](template.html). It shares the look of `../visualisa
 
 1. **In one minute**: what the feature does, how many files, how many steps, and the **Start here** link to step 1.
 2. **Decisions**: `D1…Dn` from the grilling, each one sentence, plus the glossary terms added or changed (link to `GLOSSARY.md`).
-3. **Map of the work**: one Mermaid flowchart of the steps in order, files as nodes, new files with the heavy accent border, edited files plain, tests as a third style. Under it, the file-order table (step, file, create/edit, why).
+3. **Map of the work**: the steps in order as a wrapping grid of chips (`ol.chips` in the template: step number, a role of at most 4 words, the file name; coloured by file status: new green, edited yellow, deleted red, test brown; the legend shows each colour as a swatch). The grid wraps, so 3 or 30 steps stay readable. Add a Mermaid flowchart only for branching dependencies, within the readability rules in `../visualisation/SKILL.md` (about 8 nodes, 6 per row). Under it, the file-order table (step, file, create/edit, why).
 4. **Steps**: one `<details class="step">` per step, in order, using the part table from §4. Steps carry a checkbox so the user tracks progress (browser-local; the page works without it).
 5. **Side effects**: consumers, contracts, tests, docs found in §3, each with file and line, and the "checked, unaffected" list.
 6. **Verify commands**: the verify table from §1 (task, command, source, script or own command).
 7. **Done when**: the end-to-end check for the whole feature, plus the commands from the verify table.
 8. **Glossary**: terms from this page, matching `GLOSSARY.md` exactly.
+
+**File-status colours** (everywhere a file is marked: chips, badges, tables, the legend): new = green, edited = yellow, deleted = red, test = brown. Colour is paired with a word (create, edit, delete, test) so it never carries meaning alone.
 
 Writing rules: reuse the visualisation skill's *Tone and wording* and *Writing rules* (`../visualisation/SKILL.md` §3). HTML-escape all code. Use the glossary's terms exactly. Give diagrams a caption saying what to look at.
 

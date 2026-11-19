@@ -8,9 +8,37 @@ description: >
 
 The reader is a person who wants to *understand*, not skim. The guide is done when every changed line has a plain-language explanation of **what** it does and **why** it changed, and the page opens in a browser and every diagram renders.
 
-## 0–1. Environment and scope
+## 0. Check the environment first
 
-Read [`ENVIRONMENT-AND-SCOPE.md`](ENVIRONMENT-AND-SCOPE.md): it picks the OS-specific commands (§0) and maps your prompt to a git source (§1). Sibling skills read the same file.
+These skills run on macOS, Linux and Windows. Before running anything, detect the OS and the tools you have (the harness environment block usually states the platform; otherwise run `git --version` and a Python version check). Then pick by this table instead of assuming macOS:
+
+| Need | macOS / Linux | Windows | Any OS |
+|---|---|---|---|
+| Python 3 (for the usage-tree scripts) | `python3` | `python` or `py -3` (`python3` is often a Microsoft Store stub that does nothing) | Run `<cmd> --version` and use the first that prints 3.x. If none works, say so and skip the usage tree; the guide itself needs no Python. |
+| Open the page in a browser | `open <file>` (macOS), `xdg-open <file>` (Linux) | `start "" "<file>"` (cmd) or `Start-Process "<file>"` (PowerShell) | `python -m webbrowser "<file>"`, or the Browser or preview tool when the session has one |
+| Search a file for text | `grep` | `Select-String` (PowerShell) or `findstr` | Prefer the agent's own Grep and Read tools; they behave the same everywhere |
+| Temp folder | `$TMPDIR`, else `/tmp` | `%TEMP%` (cmd) or `$env:TEMP` (PowerShell) | The session scratchpad when the environment gives one; else `python -c "import tempfile;print(tempfile.gettempdir())"` |
+
+Rules that keep the commands portable:
+
+- `git` commands are identical on every OS. Use them as written; forward slashes work in paths on Windows too.
+- Do the file work (read, count, search, write) with the agent's file tools or a short Python snippet, not `sed`, `awk`, `wc`, `cat`, `head` or shell pipes. Those exist only in POSIX shells.
+- Quote every path (spaces are common in Windows user folders).
+- Write HTML and JSON as UTF-8 and never rely on the console code page.
+- `<skills>` in this skill family means the folder that holds the sibling skill folders (`visualisation`, `change-impact-map`, `component-usage-tree`), found from this file's own location (`<skills>` is its parent folder). Do not hard-code `~/.claude/skills`: it is a different folder per OS and per install.
+
+## 1. Pin the scope
+
+Read the scope from the prompt:
+
+| Prompt says | Source |
+|---|---|
+| "uncommitted", "latest changes", "what you just did" | `git diff HEAD` plus untracked files (`git status --porcelain`, read each `??` file in full) |
+| a commit, "last commit", a SHA | `git show <sha>` |
+| a branch, PR, "since X" | `git diff <base>...HEAD` |
+| a topic with no diff ("how does auth work") | the code that implements it; the key lines play the role of changed lines |
+
+Narrow by the prompt's subject ("regarding our bug" → only the files touching that bug; list the files you left out and why in the guide's Scope section). Ask the user only when two readings give different file sets.
 
 ## 2. Find the why
 
@@ -20,7 +48,7 @@ When no evidence gives a reason, write **"Reason not recorded"** in the note. An
 
 ## 3. Write the guide
 
-**Choose the flow first.** Small scope (up to about 2 files or 150 changed lines): write the whole page yourself, as below. Larger scope: read [`SUBAGENT-FLOW.md`](SUBAGENT-FLOW.md) and follow it, which splits the walkthrough, diagrams and proof across parallel agents. Both flows produce the same page from the same template.
+**Choose the flow first.** Small scope (up to about 2 files or 150 changed lines): write the whole page yourself, as below. Larger scope: use the [subagent flow](#subagent-flow) at the end of this file, which splits the walkthrough, diagrams and proof across parallel agents. Both flows produce the same page from the same template.
 
 Start from [`template.html`](template.html) in this folder: it carries the Tailwind and Mermaid setup (both follow light and dark mode), the legend, the diagram classes and the annotated-diff markup. Fill these sections, in order:
 
@@ -53,9 +81,11 @@ Pick the tool per diagram, and mix them on one page; a page where every diagram 
 
 Rules:
 
-- Wrap every Mermaid diagram in a card (`rounded-lg border bg-white p-4`) so it belongs to the page. Use `flowchart LR` for before/after side by side; keep a diagram to about 12 nodes, split it otherwise.
+- Wrap every Mermaid diagram in a card (`rounded-lg border bg-white p-4`) so it belongs to the page. Use `flowchart LR` for before/after side by side; keep a diagram to about 8 nodes.
 - Mermaid's `classDef` carries the legend colours: `leak` = red stroke `#dc2626`, `changed` = heavy accent stroke `#3557c4`, `faded` = grey. Linking edges the bug travels along with `-.leak.->` or `linkStyle` in red.
 - Label boxes in small uppercase (`text-xs uppercase tracking-wider`) so they read as a schematic, not as UI.
+- **Readable without zooming.** Mermaid is rendered at natural size (template setting `useMaxWidth: false`), so a diagram wider than its card scrolls instead of shrinking. Prevent both: at most 6 nodes in one `LR` row, node labels at most about 24 characters (put the detail in a table or caption), and a chain longer than 6 steps split into rows: several short `flowchart LR` diagrams stacked, or a `flowchart TB` with one `subgraph` per row, or the wrapping chip grid from `guided-implementation/template.html`. Inline SVG and Tailwind boxes follow the same bar: text at least 14px on screen. A reader should never need browser zoom.
+- **File-status colours.** Wherever a page marks files by what happened to them (walkthrough file badges, maps, usage tables), use: new = green, edited = yellow, deleted = red, test file = brown. Pair each colour with a word (`new`, `edited`, `deleted`, `test`) and show the key as swatches in the legend. Red stays the fault colour in diagrams; a deleted file is marked by its word and red badge, never by a red edge.
 - Keep each diagram about 320px tall so before and after sit side by side. Colour sparingly: one accent (indigo), red for faults, amber for warnings, emerald for the fixed state.
 - The template header carries a legend (solid box = unit, dashed line = boundary, red = fault or leak, heavy border = changed). Keep it in step with what your diagrams use.
 - Know the CDN dependency: the page needs a network to render Mermaid and Tailwind. Say so in the final reply, and keep the walkthrough (plain HTML and CSS in the template) readable even if the CDNs fail to load.
@@ -89,8 +119,44 @@ Then check the page itself:
 
 - Every `{{PLACEHOLDER}}` and template comment is gone (search the file for `{{`: zero matches; use the Grep tool, not a shell-specific command).
 - Every diagram has a caption or label saying what to look at, and the changed step is visibly marked.
-- Open the file in a browser if the environment allows (use the command for this OS from section 0) and confirm the Mermaid and Tailwind output renders (no raw `flowchart` text, no unstyled page) and the page reads in both light and dark mode and at phone width.
+- Open the file in a browser if the environment allows (use the command for this OS from section 0) and confirm the Mermaid and Tailwind output renders (no raw `flowchart` text, no unstyled page) and that every diagram's text is readable at 100% zoom: no diagram scrolls sideways, none has tiny labels; split any that do and the page reads in both light and dark mode and at phone width.
 
 ## 5. Deliver
 
 Save to `.visual-guides/<YYYY-MM-DD>-<slug>.html` at the repository root (outside a repo: the current directory). If `.visual-guides/` is not git-ignored, tell the user so they can decide. When your environment can render or publish HTML for the user, show it there; otherwise give the path. Reply with the path, the "In one minute" summary and the Takeaway line; do not repeat the guide in chat.
+
+## Subagent flow
+
+Use for scopes above about 2 files or 150 changed lines. Produces the same page from the same `template.html`.
+
+### Step A: prepare the brief (you, before spawning)
+
+Subagents do not see this conversation. Everything they need goes into one brief file, `<tmpdir>/visual-guide-<slug>/brief.md` (`<tmpdir>` = the session scratchpad if there is one, else the OS temp folder from section 0):
+
+- the scope and the exact git command, so each agent can re-run it for its own files;
+- the **why evidence** from step 2: conversation facts, ticket text, the root cause, decisions the user made. Mark each item with where it came from;
+- the file list with `--numstat` counts, and the assignment of files to annotators;
+- the vocabulary: the repo's `GLOSSARY.md` terms, and the one-term-per-concept rule;
+- the diagram legend, the tone rules from this file and the path to `template.html`.
+
+### Step B: fan out (one message, all agents together)
+
+Spawn every agent below in a **single message** so they run concurrently. Use `general-purpose` agents (they must write files). Annotators and the proof agent can run on a cheaper model; keep the diagram agent on yours.
+
+| Agent | Input | Writes to `<tmpdir>/visual-guide-<slug>/` | Returns |
+|---|---|---|---|
+| **Annotator** × N (one per file; group tiny files; split a file over ~300 changed lines by hunk range, up to 6 annotators in all) | brief, its files, template's `.file`/`.hunk`/`.ln` markup | `file-<n>.html`: the complete `<details class="file">` blocks, every changed line annotated | per file: path, role, Problem and Solution sentences, `added/removed/explained` counts, terms it used, lines marked "Reason not recorded" |
+| **Diagrammer** × 1 | brief, the whole diff, the diagram patterns and tool table from this file | `diagrams.html`: the Before and After cards with diagrams | which pattern and tool it chose and why; the node/step it marked as changed |
+| **Prover** × 1 | brief, the diff | `proof.html`: the "How we know it works" and "Risks and edges" content | tests found, commands run with results, what stays unverified |
+
+Every agent's prompt states: the output file, "HTML-escape all code", the `+`/`−` signs rule, "do not invent a reason: write **Reason not recorded**", "do not edit any repository file", and "end with the return fields above". Hand the Prover the instruction to run only the existing tests that cover the scope, and to report failures as they are.
+
+### Step C: assemble and verify (you)
+
+1. Read each agent's return. If an annotator's `explained` count is below its changed-line count, send it a follow-up (`SendMessage` to the same agent) naming the uncovered lines; do not patch them yourself.
+2. Write the parts only you can: In one minute, Takeaway, Scope, Glossary (merged from every agent's terms, deduplicated), and the header badges.
+3. Open `template.html`, paste the fragments in order (file blocks sorted by the importance you gave them, the key file first), fill the header. Replace every placeholder.
+4. Run the section 4 checks on the assembled page: the line totals add up across annotators, no placeholders remain, one term per concept (search the fragments for synonyms the agents introduced and unify them), diagrams agree with the walkthrough (the node marked "changed" is a file or function that really changed).
+5. Reconcile contradictions between agents. If the Diagrammer and an Annotator explain the same change differently, re-read the code and fix the wrong one yourself.
+
+Do not let an agent write the final page, and do not run a second agent pass "to review the first" by default: the count check and the term check are the review. Skip the flow when a re-run of one annotator would cost more than writing its file yourself.

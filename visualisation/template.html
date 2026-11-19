@@ -12,7 +12,10 @@
   import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
   const dark = matchMedia("(prefers-color-scheme: dark)").matches;
   mermaid.initialize({ startOnLoad: true, theme: dark ? "dark" : "neutral", securityLevel: "loose",
-                       flowchart: { curve: "basis", htmlLabels: true } });
+                       themeVariables: { fontSize: "16px" },
+                       // useMaxWidth:false renders at natural size; Mermaid then never shrinks text to fit the card.
+                       flowchart: { curve: "basis", htmlLabels: true, useMaxWidth: false, nodeSpacing: 30, rankSpacing: 40 },
+                       sequence: { useMaxWidth: false }, state: { useMaxWidth: false } });
 </script>
 <style>
   :root {
@@ -40,6 +43,7 @@
        font-family: Georgia, "Times New Roman", serif; }
   .mermaid-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-top: 12px; overflow-x: auto; }
   .mermaid-card .mermaid { display: flex; justify-content: center; }
+  .mermaid-card svg { max-width: none; height: auto; } /* natural size: text stays readable */
   .meta { color: var(--muted); font-size: .9rem; }
   .badge { display: inline-block; padding: 2px 10px; border-radius: 999px;
            background: var(--add-bg); color: var(--add-fg); font-weight: 600; font-size: .85rem; }
@@ -103,6 +107,20 @@
     .ln { grid-template-columns: 44px 18px minmax(0, 1fr); }
     .ln .note { grid-column: 1 / -1; }
   }
+  /* File status colours: new = green, edited = yellow, deleted = red, test = brown */
+  :root { --new-bg:#e1f5e8; --new-bd:#1f9d55; --new-fg:#116b32; --edit-bg:#fff3bf; --edit-bd:#d4a017; --edit-fg:#7a5200;
+          --del-bg2:#fde4e2; --del-bd:#dc2626; --del-fg2:#a3271f; --test-bg:#efe3d6; --test-bd:#8b5a2b; --test-fg:#5c3a1a; }
+  @media (prefers-color-scheme: dark) { :root { --new-bg:#15301f; --new-bd:#3fbf78; --new-fg:#7fd99b; --edit-bg:#3a2e12; --edit-bd:#e0b43c; --edit-fg:#f0c674;
+          --del-bg2:#3a1a19; --del-bd:#ef6b61; --del-fg2:#ff9a92; --test-bg:#3b2d22; --test-bd:#c08a5a; --test-fg:#e6c3a0; } }
+  .badge.create { background: var(--new-bg); color: var(--new-fg); }
+  .badge.edit { background: var(--edit-bg); color: var(--edit-fg); }
+  .badge.delete { background: var(--del-bg2); color: var(--del-fg2); }
+  .badge.test { background: var(--test-bg); color: var(--test-fg); }
+  .legend .sw { display: inline-block; width: 28px; height: 16px; border-radius: 4px; vertical-align: -3px; margin-right: 6px; border: 3px solid; }
+  .legend .sw.new { background: var(--new-bg); border-color: var(--new-bd); }
+  .legend .sw.edit { background: var(--edit-bg); border-color: var(--edit-bd); }
+  .legend .sw.del { background: var(--del-bg2); border-color: var(--del-bd); }
+  .legend .sw.test { background: var(--test-bg); border-color: var(--test-bd); }
 </style>
 </head>
 <body>
@@ -116,6 +134,8 @@
     <span><i class="l-seam"></i>boundary</span>
     <span><i class="l-leak"></i>fault or leak</span>
     <span><i class="l-changed"></i>changed in this work</span>
+    <!-- When files are marked by status, also add: -->
+    <!-- <span><i class="sw new"></i>new</span><span><i class="sw edit"></i>edited</span><span><i class="sw del"></i>deleted</span><span><i class="sw test"></i>test</span> -->
   </div>
 
   <nav class="toc"><strong>Contents</strong>
