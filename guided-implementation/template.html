@@ -1,0 +1,180 @@
+<!doctype html>
+<!-- guided-implementation template. Replace every {{PLACEHOLDER}}; copy the
+     <details class="step"> block once per step; delete this comment. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{FEATURE TITLE}}: build guide</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+  const dark = matchMedia("(prefers-color-scheme: dark)").matches;
+  mermaid.initialize({ startOnLoad: true, theme: dark ? "dark" : "neutral", securityLevel: "loose",
+                       flowchart: { curve: "basis", htmlLabels: true } });
+</script>
+<style>
+  :root {
+    --bg: #fbfaf7; --surface: #ffffff; --text: #1d1f23; --muted: #5d6470;
+    --border: #e3e0d8; --accent: #3557c4;
+    --warn-bg: #fdf1d8; --warn-fg: #7a5200;
+    --add-bg: #e7f6ec; --add-fg: #116b32; --del-bg: #fcebea; --del-fg: #a3271f;
+    --note-bg: #f3f1ea; --code: "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #15171b; --surface: #1d2025; --text: #e7e8ea; --muted: #9aa2ad;
+      --border: #30343b; --accent: #8aa6ff;
+      --warn-bg: #3a2e12; --warn-fg: #f0c674;
+      --add-bg: #15301f; --add-fg: #7fd99b; --del-bg: #3a1a19; --del-fg: #ff9a92;
+      --note-bg: #23262c;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  main { max-width: 1000px; margin: 0 auto; padding: 32px 16px 80px; }
+  h1 { font: 600 2rem/1.2 Georgia, "Times New Roman", serif; margin: 0 0 4px; }
+  h2 { margin-top: 48px; padding-bottom: 6px; border-bottom: 1px solid var(--border); font-family: Georgia, "Times New Roman", serif; }
+  code { font-family: var(--code); font-size: .9em; }
+  a { color: var(--accent); }
+  .meta { color: var(--muted); font-size: .9rem; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; }
+  .takeaway { border-left: 4px solid var(--accent); }
+  .callout { background: var(--warn-bg); color: var(--warn-fg); border-radius: 8px; padding: 8px 14px; margin: 12px 0; }
+  .mermaid-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-top: 12px; overflow-x: auto; }
+  .mermaid-card .mermaid { display: flex; justify-content: center; }
+  table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); }
+  th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-weight: 600; font-size: .8rem; }
+  .badge.create { background: var(--add-bg); color: var(--add-fg); }
+  .badge.edit { background: #e4e9fb; color: #2a45a0; }
+  .badge.test { background: var(--warn-bg); color: var(--warn-fg); }
+  .progress { position: sticky; top: 0; background: var(--bg); padding: 8px 0; z-index: 5; color: var(--muted); font-size: .9rem; border-bottom: 1px solid var(--border); }
+
+  /* Steps */
+  details.step { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin: 16px 0; overflow: hidden; }
+  details.step > summary { cursor: pointer; padding: 12px 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  details.step .num { font: 700 1.1rem Georgia, serif; color: var(--accent); }
+  details.step .path { font-family: var(--code); font-weight: 600; }
+  details.step.done { opacity: .6; }
+  .step-body { padding: 0 16px 16px; }
+  .step-body h4 { margin: 16px 0 4px; font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .snippet { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .snippet .row { display: grid; grid-template-columns: 22px minmax(0, 1fr); border-top: 1px solid var(--border); }
+  .snippet .row:first-child { border-top: 0; }
+  .snippet .sign { text-align: center; font-family: var(--code); font-weight: 700; padding: 2px 0; }
+  .snippet pre { margin: 0; padding: 2px 8px; font-family: var(--code); font-size: .85rem; white-space: pre-wrap; word-break: break-word; }
+  .row.add { background: var(--add-bg); } .row.add .sign { color: var(--add-fg); }
+  .row.del { background: var(--del-bg); } .row.del .sign { color: var(--del-fg); }
+  .row.ctx pre { color: var(--muted); }
+  .explain { margin: 8px 0 0; padding-left: 1.2em; } .explain li { margin: 4px 0; }
+  .check { background: var(--note-bg); border-left: 3px solid var(--accent); padding: 6px 12px; border-radius: 4px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; color: var(--muted); font-size: .85rem; margin: 12px 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>{{FEATURE TITLE}}</h1>
+  <p class="meta">{{DATE}} · {{N}} files · {{N}} steps · you edit, the guide explains</p>
+
+  <h2 id="minute">In one minute</h2>
+  <div class="card"><p>{{WHAT THE FEATURE DOES, 3 sentences}}</p></div>
+  <div class="card takeaway" style="margin-top:12px"><strong>Start here.</strong> <a href="#step-1">Step 1: <code>{{FIRST FILE}}</code> →</a></div>
+
+  <h2 id="decisions">Decisions</h2>
+  <ul>
+    <li><b>D1.</b> {{DECISION, one sentence}}</li>
+  </ul>
+  <p class="meta">Glossary terms added or changed: <code>{{TERM}}</code> (see <code>GLOSSARY.md</code>)</p>
+
+  <h2 id="map">Map of the work</h2>
+  <div class="legend"><span>heavy blue border = new file</span><span>plain = edited file</span><span>amber = test</span></div>
+  <div class="mermaid-card"><pre class="mermaid">
+    flowchart LR
+      S1["1 · {{file}}"] --> S2["2 · {{file}}"] --> S3["3 · {{file}}"]
+      classDef new stroke:#3557c4,stroke-width:3px;
+      classDef test stroke:#b7791f,stroke-width:2px;
+      class S2 new
+      class S3 test
+  </pre></div>
+  <table style="margin-top:12px">
+    <tr><th>#</th><th>File</th><th>Kind</th><th>Why</th></tr>
+    <tr><td>1</td><td><code>{{FILE}}</code></td><td><span class="badge edit">edit</span></td><td>{{WHY}}</td></tr>
+  </table>
+
+  <h2 id="steps">Steps</h2>
+  <div class="progress" id="progress">0 of {{N}} steps done</div>
+
+  <!-- Copy this block once per step. id="step-N", data-step="N". -->
+  <details class="step" id="step-{{N}}" data-step="{{N}}" open>
+    <summary>
+      <input type="checkbox" class="tick" aria-label="Step {{N}} done">
+      <span class="num">{{N}}</span><span class="path">{{FILE PATH}}</span>
+      <span class="badge {{create|edit|test}}">{{create|edit|test}}</span>
+    </summary>
+    <div class="step-body">
+      <h4>Where</h4><p>{{location in the file}}</p>
+      <h4>Why now</h4><p>{{one sentence}}</p>
+      <h4>Code</h4>
+      <div class="snippet">
+        <div class="row ctx"><span class="sign"> </span><pre>{{unchanged anchor line}}</pre></div>
+        <div class="row add"><span class="sign">+</span><pre>{{added line, HTML-escaped}}</pre></div>
+        <div class="row del"><span class="sign">−</span><pre>{{removed line}}</pre></div>
+      </div>
+      <h4>What each part does</h4>
+      <ul class="explain"><li><code>{{lines}}</code>: {{what and why}} ({{D#}})</li></ul>
+      <h4>Check</h4><p class="check">{{command or click path}} → {{expected result}}</p>
+      <h4>If skipped</h4><p>{{what breaks}}</p>
+    </div>
+  </details>
+
+  <h2 id="side-effects">Side effects</h2>
+  <table>
+    <tr><th>Kind</th><th>Where</th><th>Effect</th></tr>
+    <tr><td>consumer</td><td><code>{{file:line}}</code></td><td>{{how it uses the changed code, and whether it needs an edit}}</td></tr>
+  </table>
+  <p class="meta">Checked, unaffected: <code>{{file}}</code> ({{reason}})</p>
+
+  <h2 id="verify">Verify commands</h2>
+  <table>
+    <tr><th>Task</th><th>Command</th><th>From</th></tr>
+    <tr><td>typecheck</td><td><code>{{pm run type-check}}</code></td><td>{{package.json script | own command | your pick}}</td></tr>
+    <tr><td>lint</td><td><code>{{pm run lint}}</code></td><td>{{source}}</td></tr>
+    <tr><td>format</td><td><code>{{pm run format:check}}</code></td><td>{{source}}</td></tr>
+    <tr><td>test</td><td><code>{{pm run test}}</code></td><td>{{source}}</td></tr>
+  </table>
+  <p class="meta">Optional fix commands (rewrite files): <code>{{pm run lint:fix}}</code></p>
+
+  <h2 id="done">Done when</h2>
+  <div class="card"><p>{{end-to-end check}}</p><p class="check"><code>{{commands}}</code></p></div>
+
+  <h2 id="glossary">Glossary</h2>
+  <dl><dt><b>{{TERM}}</b></dt><dd>{{definition, same as GLOSSARY.md}}</dd></dl>
+</main>
+<script>
+  // Browser-local progress; the page reads fine without it.
+  (function () {
+    var key = "guided-impl:" + location.pathname, saved = {};
+    try { saved = JSON.parse(localStorage.getItem(key) || "{}"); } catch (e) {}
+    var steps = document.querySelectorAll("details.step");
+    function update() {
+      var n = 0;
+      steps.forEach(function (s) { if (s.querySelector(".tick").checked) n++; });
+      document.getElementById("progress").textContent = n + " of " + steps.length + " steps done";
+    }
+    steps.forEach(function (s) {
+      var t = s.querySelector(".tick"), id = s.dataset.step;
+      t.checked = !!saved[id]; s.classList.toggle("done", t.checked);
+      t.addEventListener("click", function (e) { e.stopPropagation(); });
+      t.addEventListener("change", function () {
+        s.classList.toggle("done", t.checked); saved[id] = t.checked;
+        try { localStorage.setItem(key, JSON.stringify(saved)); } catch (e) {}
+        update();
+      });
+    });
+    update();
+  })();
+</script>
+</body>
+</html>
