@@ -90,13 +90,15 @@
   .snippet button.copy.ok { background: var(--add-bg); color: var(--add-fg); border-color: var(--add-fg); }
   .snippet pre { margin: 0; padding: 6px 0; overflow-x: auto; font-family: var(--code); font-size: .85rem; line-height: 1.5; }
   .snippet code { font-family: inherit; font-size: inherit; display: block; min-width: max-content; }
-  .snippet .l { display: block; min-height: 1.5em; padding: 0 12px 0 32px; position: relative; white-space: pre; }
-  .snippet .l::before { position: absolute; left: 10px; font-weight: 700; user-select: none; }
-  .snippet .l.add { background: var(--add-bg); } .snippet .l.add::before { content: "+"; color: var(--add-fg); }
-  .snippet .l.del { background: var(--del-bg); } .snippet .l.del::before { content: "\2212"; color: var(--del-fg); }
+  /* Gutter: row number (data-n) and +/- sign are CSS generated content, so they are never selected or copied. */
+  .snippet .l { display: block; min-height: 1.5em; padding: 0 12px 0 76px; position: relative; white-space: pre; }
+  .snippet .l::before { content: attr(data-n); position: absolute; left: 0; width: 44px; text-align: right; color: var(--muted); opacity: .8; font-size: .8rem; user-select: none; -webkit-user-select: none; pointer-events: none; }
+  .snippet .l::after { position: absolute; left: 54px; font-weight: 700; user-select: none; -webkit-user-select: none; pointer-events: none; }
+  .snippet .l.add { background: var(--add-bg); } .snippet .l.add::after { content: "+"; color: var(--add-fg); }
+  .snippet .l.del { background: var(--del-bg); } .snippet .l.del::after { content: "\2212"; color: var(--del-fg); }
   .snippet .l.ctx { color: var(--muted); }
-  /* A snippet of a whole new file: green background only, no sign on each line. */
-  .snippet.newfile .l.add::before { content: none; } .snippet.newfile .l { padding-left: 12px; }
+  /* A snippet of a whole new file: green background and row numbers, no sign on each line. */
+  .snippet.newfile .l.add::after { content: none; } .snippet.newfile .l { padding-left: 56px; }
   .explain { margin: 8px 0 0; padding-left: 1.2em; } .explain li { margin: 4px 0; }
   .check { background: var(--note-bg); border-left: 3px solid var(--accent); padding: 6px 12px; border-radius: 4px; }
   .legend { display: flex; flex-wrap: wrap; gap: 16px; color: var(--muted); font-size: .85rem; margin: 12px 0; }
@@ -204,10 +206,10 @@
       <h4>Where</h4><p>{{location in the file}}</p>
       <h4>Why now</h4><p>{{one sentence}}</p>
       <h4>Code</h4>
-      <!-- Snippet rules: no "+" or "−" characters in the code text, one span per line, spans adjacent with no whitespace or newline between them, HTML-escaped code, a span containing only <br> for a blank line. New file: class "snippet newfile" and every line .add. Edit: 2-3 .ctx anchor lines, then .add and .del lines. -->
+      <!-- Snippet rules: no "+" or "−" characters in the code text, one span per line, every .ctx and .add span carries data-n (its line number in the file after the edit; a new file counts from 1), .del spans carry none, spans adjacent with no whitespace or newline between them, HTML-escaped code, a span containing only <br> for a blank line. New file: class "snippet newfile" and every line .add. Edit: 2-3 .ctx anchor lines, then .add and .del lines. -->
       <figure class="snippet">
         <figcaption><span>{{language}} · {{file name}}</span><span class="btns"><button type="button" class="copy" data-mode="add">Copy new code</button><button type="button" class="copy" data-mode="ctx">Copy with context</button></span></figcaption>
-        <pre><code><span class="l ctx">{{unchanged anchor line}}</span><span class="l add">{{added line}}</span><span class="l add">{{added line}}</span><span class="l del">{{removed line}}</span></code></pre>
+        <pre><code><span class="l ctx" data-n="{{N}}">{{unchanged anchor line}}</span><span class="l add" data-n="{{N+1}}">{{added line}}</span><span class="l add" data-n="{{N+2}}">{{added line}}</span><span class="l del">{{removed line}}</span></code></pre>
       </figure>
       <h4>What each part does</h4>
       <ul class="explain"><li><code>{{lines}}</code>: {{what and why}} ({{D#}})</li></ul>
@@ -265,6 +267,24 @@
     update();
   })();
 
+  // Manual selection: whatever the user selects inside a snippet is copied as clean code
+  // (no row numbers, no signs, no removed lines), even across several lines.
+  document.querySelectorAll(".snippet").forEach(function (fig) {
+    fig.addEventListener("copy", function (e) {
+      var sel = getSelection();
+      if (!sel || !sel.rangeCount || sel.isCollapsed || !e.clipboardData) return;
+      var r = sel.getRangeAt(0), parts = [];
+      fig.querySelectorAll(".l:not(.del)").forEach(function (l) {
+        if (!r.intersectsNode(l)) return;
+        var lr = document.createRange(); lr.selectNodeContents(l);
+        if (r.compareBoundaryPoints(Range.START_TO_START, lr) > 0) lr.setStart(r.startContainer, r.startOffset);
+        if (r.compareBoundaryPoints(Range.END_TO_END, lr) < 0) lr.setEnd(r.endContainer, r.endOffset);
+        parts.push(lr.toString());
+      });
+      if (!parts.length) return;
+      e.clipboardData.setData("text/plain", parts.join("\n")); e.preventDefault();
+    });
+  });
   // Copy buttons: "add" copies the added lines only; "ctx" copies context + added lines (removed lines never).
   // Signs are CSS-only, so the clipboard gets clean code.
   document.querySelectorAll(".snippet").forEach(function (fig) {
