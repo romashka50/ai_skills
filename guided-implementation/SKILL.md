@@ -102,11 +102,11 @@ Completion criterion: every change-set row appears in exactly one step, and ever
 
 ## 5. Build the page
 
-Start from [`template.html`](template.html). It shares the look of `../visualisation/template.html` (Tailwind and Mermaid from CDN, light and dark mode) and adds step cards with checkboxes. Sections, in order:
+**Copy [`template.html`](template.html) and fill it. Never write the page from scratch**: the template carries the readable-size diagram settings, the chip map, the file-status colours and the step checkboxes, and a page without them renders tiny diagrams. It shares the look of `../visualisation/template.html` (Tailwind and Mermaid from CDN, light and dark mode) and adds step cards with checkboxes. Sections, in order:
 
 1. **In one minute**: what the feature does, how many files, how many steps, and the **Start here** link to step 1.
 2. **Decisions**: `D1…Dn` from the grilling, each one sentence, plus the glossary terms added or changed (link to `GLOSSARY.md`).
-3. **Map of the work**: the steps in order as a wrapping grid of chips (`ol.chips` in the template: step number, a role of at most 4 words, the file name; coloured by file status: new green, edited yellow, deleted red, test brown; the legend shows each colour as a swatch). The grid wraps, so 3 or 30 steps stay readable. Add a Mermaid flowchart only for branching dependencies, within the readability rules in `../visualisation/SKILL.md` (about 8 nodes, 6 per row). Under it, the file-order table (step, file, create/edit, why).
+3. **Map of the work**: the steps in order as a wrapping grid of chips (`ol.chips` in the template: step number, a role of at most 4 words, the file name; coloured by file status: new green, edited yellow, deleted red, test brown; the legend shows each colour as a swatch). The grid wraps, so 3 or 30 steps stay readable. With more than about 12 steps, group the chips under one sub-heading per area, repository or phase (one chip per step, or one chip per consecutive range of steps when there are more than 30). Mermaid is never the step map. Add a Mermaid flowchart only for branching dependencies, within the readability rules in `../visualisation/SKILL.md` (about 8 nodes, 6 per row). Under it, the file-order table (step, file, create/edit, why).
 4. **Steps**: one `<details class="step">` per step, in order, using the part table from §4. Steps carry a checkbox so the user tracks progress (browser-local; the page works without it).
 5. **Side effects**: consumers, contracts, tests, docs found in §3, each with file and line, and the "checked, unaffected" list.
 6. **Verify commands**: the verify table from §1 (task, command, source, script or own command).
@@ -123,6 +123,7 @@ Writing rules: reuse the visualisation skill's *Tone and wording* and *Writing r
 - Every `D#` is cited by at least one step; every step cites at least one `D#`.
 - Count change-set rows and steps: equal coverage, as §4 requires.
 - Every step has a Check with a command or click path, and every command appears in the verify table.
+- The map is an `ol.chips` grid, no Mermaid diagram holds more than 8 nodes or labels longer than about 24 characters, and `useMaxWidth: false` is present in the Mermaid setup (search the file for each).
 - Open the page (command from §0) and confirm Mermaid and Tailwind render, in light and dark mode and at phone width.
 
 ## 7. Deliver and hand over
