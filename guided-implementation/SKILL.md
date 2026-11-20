@@ -106,8 +106,12 @@ Completion criterion: every change-set row appears in exactly one step, and ever
 
 1. **In one minute**: what the feature does, how many files, how many steps, and the **Start here** link to step 1.
 2. **Decisions**: `D1…Dn` from the grilling, each one sentence, plus the glossary terms added or changed (link to `GLOSSARY.md`).
-3. **Map of the work**: the steps in order as a wrapping grid of chips (`ol.chips` in the template: step number, a role of at most 4 words, the file name; coloured by file status: new green, edited yellow, deleted red, test brown; the legend shows each colour as a swatch). The grid wraps, so 3 or 30 steps stay readable. With more than about 12 steps, group the chips under one sub-heading per area, repository or phase (one chip per step, or one chip per consecutive range of steps when there are more than 30). Mermaid is never the step map. Add a Mermaid flowchart only for branching dependencies, within the readability rules in `../visualisation/SKILL.md` (about 8 nodes, 6 per row). Under it, the file-order table (step, file, create/edit, why).
-4. **Steps**: one `<details class="step">` per step, in order, using the part table from §4. Steps carry a checkbox so the user tracks progress (browser-local; the page works without it).
+3. **Map of the work**: four parts, every run, in this order:
+   1. **Counts**: badges for new, edited, deleted and test files, then the colour legend as swatches (new green, edited yellow, deleted red, test brown).
+   2. **How the pieces fit**: one Mermaid diagram of how the changed pieces interact at runtime (caller → API → service → store, or component → provider → hook), at most 8 nodes, labels at most about 24 characters, new and edited nodes coloured by status, plus a caption saying what to look at. Mermaid is never the step map.
+   3. **Files by area**: one `<details class="group">` per area (backend, UI, tests, config, docs, or one per repository). Each group holds its **chips** (`ol.chips`: step number, a role of at most 4 words, the file name, coloured by status) and its **file table** (step, path, kind, why, with a badge in the status colour; deleted files get a red `delete` row). Use groups when there are more than about 12 steps or two or more areas; otherwise one group titled "All steps". Groups start **open**, so the whole plan is visible with no clicks and the reader can collapse any area. With more than about 30 steps, a chip may cover a consecutive range of steps.
+   4. **Every changed file appears** in exactly one group's table, including deleted ones.
+4. **Steps**: the step cards, wrapped in the same groups in the same order (a group's summary repeats its area name and step range). Each is one `<details class="step">` using the part table from §4, with a checkbox so the user tracks progress (browser-local; the page works without it). The page stays fully readable with every group and step open.
 5. **Side effects**: consumers, contracts, tests, docs found in §3, each with file and line, and the "checked, unaffected" list.
 6. **Verify commands**: the verify table from §1 (task, command, source, script or own command).
 7. **Done when**: the end-to-end check for the whole feature, plus the commands from the verify table.
@@ -123,7 +127,9 @@ Writing rules: reuse the visualisation skill's *Tone and wording* and *Writing r
 - Every `D#` is cited by at least one step; every step cites at least one `D#`.
 - Count change-set rows and steps: equal coverage, as §4 requires.
 - Every step has a Check with a command or click path, and every command appears in the verify table.
-- The map is an `ol.chips` grid, no Mermaid diagram holds more than 8 nodes or labels longer than about 24 characters, and `useMaxWidth: false` is present in the Mermaid setup (search the file for each).
+- The Map section has all four parts: counts and legend, one overview Mermaid diagram (at most 8 nodes, labels at most about 24 characters, `useMaxWidth: false` in the setup), and grouped chips plus tables.
+- Count the table rows: the number equals the change set, every file appears once, deleted files carry the red `delete` badge, and the badge counts at the top match the rows.
+- Every chip links to an existing `#step-N`, and group names and step ranges match between the map and the Steps section.
 - Open the page (command from §0) and confirm Mermaid and Tailwind render, in light and dark mode and at phone width.
 
 ## 7. Deliver and hand over

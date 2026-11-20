@@ -204,7 +204,7 @@ Plain language works too: *"Explain what changed, why, and what it affects. I'm 
 2. Grills you on the idea. With new domain terms it runs `grilling` plus `domain-modeling` (like `/grill-with-docs`) and records decisions in `GLOSSARY.md`; for purely technical work it runs `grilling` alone (like `/grill-me`).
 3. Finds every file to touch, every consumer of edited code, and contracts, tests and docs affected.
 4. Orders the steps so the project works after each one: prefactor first, then one thin slice through every layer.
-5. Builds one HTML page: the decisions, a colour-coded map of the steps (new file green, edited yellow, deleted red, test brown), and one card per step with the file, a paste-ready snippet, an explanation, a check command and a progress checkbox.
+5. Builds one HTML page: the decisions, a map of the work (counts, a diagram of how the pieces fit, and files grouped by area such as backend and UI, each group collapsible and showing colour-coded chips and a file table: new green, edited yellow, deleted red, test brown), and one card per step with the file, a paste-ready snippet, an explanation, a check command and a progress checkbox.
 6. After you finish editing, reviews your result against the plan with `/code-review` and `/visualisation`.
 
 **Try it**

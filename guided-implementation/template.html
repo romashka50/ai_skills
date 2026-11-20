@@ -66,6 +66,10 @@
   .legend .sw.new { border: 3px solid var(--accent); background: #e4e9fb; }
   .legend .sw.test { border: 1.5px solid #b7791f; background: var(--warn-bg); }
   .chip code { display: block; color: var(--muted); font-size: .8rem; margin-top: 2px; overflow-wrap: anywhere; }
+  .counts { margin: 8px 0; display: flex; flex-wrap: wrap; gap: 8px; }
+  details.group { border: 1px solid var(--border); border-radius: 10px; margin: 14px 0; padding: 0 14px 12px; background: color-mix(in srgb, var(--surface) 60%, transparent); }
+  details.group > summary { cursor: pointer; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 0; font-size: 1.05rem; }
+  details.group > summary .meta { font-size: .85rem; }
   .progress { position: sticky; top: 0; background: var(--bg); padding: 8px 0; z-index: 5; color: var(--muted); font-size: .9rem; border-bottom: 1px solid var(--border); }
 
   /* Steps */
@@ -124,21 +128,62 @@
   <p class="meta">Glossary terms added or changed: <code>{{TERM}}</code> (see <code>GLOSSARY.md</code>)</p>
 
   <h2 id="map">Map of the work</h2>
+  <!-- Required parts, in this order: counts, legend, overview diagram, then one group per area. -->
+  <p class="counts"><span class="badge create">{{N}} new</span> <span class="badge edit">{{N}} edited</span> <span class="badge delete">{{N}} deleted</span> <span class="badge test">{{N}} test</span></p>
   <div class="legend"><span><i class="sw new"></i>new file (green)</span><span><i class="sw edit"></i>edited file (yellow)</span><span><i class="sw del"></i>deleted file (red)</span><span><i class="sw test"></i>test file (brown)</span></div>
-  <!-- Chip classes: new (green), edit (yellow), del (red), test (brown). One chip per step, in order. The grid wraps to new rows, so the map stays readable at any number of steps. -->
-  <ol class="chips">
-    <li class="chip new"><a href="#step-1"><b>1</b><span class="cl">{{short role}}</span><code>{{file name}}</code></a></li>
-    <li class="chip edit"><a href="#step-2"><b>2</b><span class="cl">{{short role}}</span><code>{{file name}}</code></a></li>
-    <li class="chip test"><a href="#step-3"><b>3</b><span class="cl">{{short role}}</span><code>{{file name}}</code></a></li>
-  </ol>
-  <table style="margin-top:12px">
-    <tr><th>#</th><th>File</th><th>Kind</th><th>Why</th></tr>
-    <tr><td>1</td><td><code>{{FILE}}</code></td><td><span class="badge edit">edit</span></td><td>{{WHY}}</td></tr>
-  </table>
+
+  <h3>How the pieces fit</h3>
+  <!-- Overview diagram: how the changed pieces interact at runtime. Mermaid, at most 8 nodes, labels at most about 24 characters. Required on every page. -->
+  <div class="mermaid-card"><pre class="mermaid">
+    flowchart LR
+      UI["Order form"] --> API["Orders API client"]
+      API --> RT["Orders route"]
+      RT --> SV["OrderService"]
+      SV --> DB[("orders table")]
+      classDef new stroke:#1f9d55,stroke-width:3px;
+      classDef edit stroke:#d4a017,stroke-width:3px;
+      class UI,API edit
+      class RT,SV,DB new
+  </pre></div>
+  <p class="meta">Caption: {{what to look at in the diagram}}</p>
+
+  <h3>Files by area</h3>
+  <!-- One <details class="group"> per area (backend, UI, tests, config, docs...). Use one group per area when there are more than about 12 steps or two or more areas; otherwise a single group titled "All steps". Groups start open so everything is visible; clicking the summary collapses one. Each group holds its chips AND its table rows, so the reader sees map and detail together. -->
+  <details class="group" open>
+    <summary><b>Backend</b><span class="meta">steps 1–3 · 3 files</span><span class="badge create">2 new</span><span class="badge edit">1 edited</span></summary>
+    <ol class="chips">
+      <li class="chip new"><a href="#step-1"><b>1</b><span class="cl">order contract</span><code>Order.ts</code></a></li>
+      <li class="chip new"><a href="#step-2"><b>2</b><span class="cl">order service</span><code>OrderService.ts</code></a></li>
+      <li class="chip edit"><a href="#step-3"><b>3</b><span class="cl">mount route</span><code>routes.ts</code></a></li>
+    </ol>
+    <table>
+      <tr><th>#</th><th>File</th><th>Kind</th><th>Why</th></tr>
+      <tr><td>1</td><td><code>src/domain/Order.ts</code></td><td><span class="badge create">create</span></td><td>D1 shared contract.</td></tr>
+      <tr><td>2</td><td><code>src/services/OrderService.ts</code></td><td><span class="badge create">create</span></td><td>D2 business rules.</td></tr>
+      <tr><td>3</td><td><code>src/routes/routes.ts</code></td><td><span class="badge edit">edit</span></td><td>Expose the new route.</td></tr>
+    </table>
+  </details>
+  <details class="group" open>
+    <summary><b>UI and tests</b><span class="meta">steps 4–6 · 3 files</span><span class="badge edit">1 edited</span><span class="badge delete">1 deleted</span><span class="badge test">1 test</span></summary>
+    <ol class="chips">
+      <li class="chip edit"><a href="#step-4"><b>4</b><span class="cl">order form</span><code>OrderForm.tsx</code></a></li>
+      <li class="chip test"><a href="#step-5"><b>5</b><span class="cl">form test</span><code>OrderForm.test.tsx</code></a></li>
+      <li class="chip del"><a href="#step-6"><b>6</b><span class="cl">remove old helper</span><code>legacyOrder.ts</code></a></li>
+    </ol>
+    <table>
+      <tr><th>#</th><th>File</th><th>Kind</th><th>Why</th></tr>
+      <tr><td>4</td><td><code>src/ui/OrderForm.tsx</code></td><td><span class="badge edit">edit</span></td><td>D3 call the new API.</td></tr>
+      <tr><td>5</td><td><code>src/ui/OrderForm.test.tsx</code></td><td><span class="badge test">test</span></td><td>Prove the form submits.</td></tr>
+      <tr><td>6</td><td><code>src/utils/legacyOrder.ts</code></td><td><span class="badge delete">delete</span></td><td>No caller remains.</td></tr>
+    </table>
+  </details>
 
   <h2 id="steps">Steps</h2>
   <div class="progress" id="progress">0 of {{N}} steps done</div>
 
+  <!-- Wrap the steps of each area in the same <details class="group" open> as in the map (same titles, same order). Without groups (12 steps or fewer, one area) list the steps directly. -->
+  <details class="group" open>
+    <summary><b>{{AREA}}</b><span class="meta">steps {{A}}–{{B}}</span></summary>
   <!-- Copy this block once per step. id="step-N", data-step="N". -->
   <details class="step" id="step-{{N}}" data-step="{{N}}" open>
     <summary>
@@ -161,6 +206,8 @@
       <h4>If skipped</h4><p>{{what breaks}}</p>
     </div>
   </details>
+  </details>
+  <!-- /group -->
 
   <h2 id="side-effects">Side effects</h2>
   <table>
