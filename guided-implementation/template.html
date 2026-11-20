@@ -80,14 +80,23 @@
   details.step.done { opacity: .6; }
   .step-body { padding: 0 16px 16px; }
   .step-body h4 { margin: 16px 0 4px; font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
-  .snippet { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-  .snippet .row { display: grid; grid-template-columns: 22px minmax(0, 1fr); border-top: 1px solid var(--border); }
-  .snippet .row:first-child { border-top: 0; }
-  .snippet .sign { text-align: center; font-family: var(--code); font-weight: 700; padding: 2px 0; }
-  .snippet pre { margin: 0; padding: 2px 8px; font-family: var(--code); font-size: .85rem; white-space: pre-wrap; word-break: break-word; }
-  .row.add { background: var(--add-bg); } .row.add .sign { color: var(--add-fg); }
-  .row.del { background: var(--del-bg); } .row.del .sign { color: var(--del-fg); }
-  .row.ctx pre { color: var(--muted); }
+  /* Code snippets. One <span class="l ..."> per line inside a single <pre><code>.
+     The +/− gutter signs are CSS ::before content, so they are never selected or copied. */
+  .snippet { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin: 0; }
+  .snippet figcaption { display: flex; gap: 8px; align-items: center; justify-content: space-between; padding: 6px 10px; background: var(--note-bg); border-bottom: 1px solid var(--border); font-size: .8rem; color: var(--muted); }
+  .snippet .btns { display: flex; gap: 6px; }
+  .snippet button.copy { font: inherit; font-size: .8rem; cursor: pointer; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 2px 10px; }
+  .snippet button.copy:hover { border-color: var(--accent); }
+  .snippet button.copy.ok { background: var(--add-bg); color: var(--add-fg); border-color: var(--add-fg); }
+  .snippet pre { margin: 0; padding: 6px 0; overflow-x: auto; font-family: var(--code); font-size: .85rem; line-height: 1.5; }
+  .snippet code { font-family: inherit; font-size: inherit; display: block; min-width: max-content; }
+  .snippet .l { display: block; min-height: 1.5em; padding: 0 12px 0 32px; position: relative; white-space: pre; }
+  .snippet .l::before { position: absolute; left: 10px; font-weight: 700; user-select: none; }
+  .snippet .l.add { background: var(--add-bg); } .snippet .l.add::before { content: "+"; color: var(--add-fg); }
+  .snippet .l.del { background: var(--del-bg); } .snippet .l.del::before { content: "\2212"; color: var(--del-fg); }
+  .snippet .l.ctx { color: var(--muted); }
+  /* A snippet of a whole new file: green background only, no sign on each line. */
+  .snippet.newfile .l.add::before { content: none; } .snippet.newfile .l { padding-left: 12px; }
   .explain { margin: 8px 0 0; padding-left: 1.2em; } .explain li { margin: 4px 0; }
   .check { background: var(--note-bg); border-left: 3px solid var(--accent); padding: 6px 12px; border-radius: 4px; }
   .legend { display: flex; flex-wrap: wrap; gap: 16px; color: var(--muted); font-size: .85rem; margin: 12px 0; }
@@ -195,11 +204,11 @@
       <h4>Where</h4><p>{{location in the file}}</p>
       <h4>Why now</h4><p>{{one sentence}}</p>
       <h4>Code</h4>
-      <div class="snippet">
-        <div class="row ctx"><span class="sign"> </span><pre>{{unchanged anchor line}}</pre></div>
-        <div class="row add"><span class="sign">+</span><pre>{{added line, HTML-escaped}}</pre></div>
-        <div class="row del"><span class="sign">−</span><pre>{{removed line}}</pre></div>
-      </div>
+      <!-- Snippet rules: no "+" or "−" characters in the code text, one span per line, spans adjacent with no whitespace or newline between them, HTML-escaped code, a span containing only <br> for a blank line. New file: class "snippet newfile" and every line .add. Edit: 2-3 .ctx anchor lines, then .add and .del lines. -->
+      <figure class="snippet">
+        <figcaption><span>{{language}} · {{file name}}</span><span class="btns"><button type="button" class="copy" data-mode="add">Copy new code</button><button type="button" class="copy" data-mode="ctx">Copy with context</button></span></figcaption>
+        <pre><code><span class="l ctx">{{unchanged anchor line}}</span><span class="l add">{{added line}}</span><span class="l add">{{added line}}</span><span class="l del">{{removed line}}</span></code></pre>
+      </figure>
       <h4>What each part does</h4>
       <ul class="explain"><li><code>{{lines}}</code>: {{what and why}} ({{D#}})</li></ul>
       <h4>Check</h4><p class="check">{{command or click path}} → {{expected result}}</p>
@@ -255,6 +264,23 @@
     });
     update();
   })();
+
+  // Copy buttons: "add" copies the added lines only; "ctx" copies context + added lines (removed lines never).
+  // Signs are CSS-only, so the clipboard gets clean code.
+  document.querySelectorAll(".snippet").forEach(function (fig) {
+    var hasCtx = fig.querySelector(".l.ctx");
+    fig.querySelectorAll("button.copy").forEach(function (b) {
+      if (b.dataset.mode === "ctx" && !hasCtx) { b.remove(); return; }
+      if (b.dataset.mode === "add" && !hasCtx) b.textContent = "Copy";
+      b.addEventListener("click", function () {
+        var sel = b.dataset.mode === "ctx" ? ".l.ctx, .l.add" : ".l.add";
+        var text = Array.prototype.map.call(fig.querySelectorAll(sel), function (l) { return l.textContent; }).join("\n");
+        var done = function () { var o = b.textContent; b.classList.add("ok"); b.textContent = "Copied"; setTimeout(function () { b.classList.remove("ok"); b.textContent = o; }, 1500); };
+        var fallback = function () { var a = document.createElement("textarea"); a.value = text; document.body.appendChild(a); a.select(); try { document.execCommand("copy"); done(); } catch (e) {} a.remove(); };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
+      });
+    });
+  });
 </script>
 </body>
 </html>

@@ -1,0 +1,33 @@
+{
+  "name": "ai_skills",
+  "version": "1.0.1",
+  "description": "AI agent skills that help you understand code before and after you change it: visual change guides, usage trees, change-impact maps and file-by-file feature build guides.",
+  "private": true,
+  "author": "romashka50 <roma.buchuk@yahoo.com>",
+  "keywords": [
+    "ai",
+    "agent-skills",
+    "skills",
+    "code-review",
+    "visualisation",
+    "impact-analysis",
+    "claude-code"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/romashka50/ai_skills.git"
+  },
+  "files": [
+    "visualisation",
+    "component-usage-tree",
+    "change-impact-map",
+    "guided-implementation",
+    "README.md"
+  ],
+  "skills": {
+    "visualisation": "Self-contained HTML visual guide that explains code changes or a topic line by line, with diagrams and the reason for each change.",
+    "component-usage-tree": "Interactive, clickable tree of who uses the components, modules or functions changed in a diff, with flagged risks.",
+    "change-impact-map": "One HTML page combining the visualisation guide and the usage tree: what changed, why, who uses it, what could break.",
+    "guided-implementation": "Plans a feature through an interview, then writes a file-by-file build guide with copyable snippets that you apply by hand."
+  }
+}

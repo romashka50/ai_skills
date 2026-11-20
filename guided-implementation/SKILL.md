@@ -93,7 +93,7 @@ One step is one file, or a tight pair that cannot compile apart. Each step carri
 |---|---|
 | **Where** | repo-relative path, `create` or `edit`, and the location in the file (after which function, near which line) |
 | **Why now** | what earlier steps made possible, in one sentence |
-| **Snippet** | real code written against the file as it is today: read the file first. Edits show 2–3 unchanged anchor lines, then the added lines with `+` and removed lines with `−`. New files show the whole file. Every snippet is paste-ready |
+| **Snippet** | real code written against the file as it is today: read the file first. Edits show 2–3 unchanged anchor lines, then the added and removed lines; a new file shows the whole file. Every snippet is paste-ready and follows the **snippet markup rules** below |
 | **Explanation** | line-group by line-group: what it does, why it is there, which decision (`D#`) it serves |
 | **Check** | the exact command from the verify table (typecheck after type-affecting steps, lint and format on the edited file, the matching test) or a click path, and the expected result |
 | **If skipped** | what breaks, one sentence |
@@ -119,6 +119,13 @@ Completion criterion: every change-set row appears in exactly one step, and ever
 
 **File-status colours** (everywhere a file is marked: chips, badges, tables, the legend): new = green, edited = yellow, deleted = red, test = brown. Colour is paired with a word (create, edit, delete, test) so it never carries meaning alone.
 
+**Snippet markup rules** (copying must give clean code):
+- One `<figure class="snippet">` per snippet: a caption with the language and file name, copy buttons, and a single `<pre><code>` holding one `<span class="l add|del|ctx">` per line.
+- The `+` and `−` signs come from CSS (`::before`), never from the text, so selecting or copying never picks them up. A new-file snippet uses `class="snippet newfile"` with every line `.add` (green background, no per-line sign).
+- Spans sit next to each other with no whitespace or newline between them; a blank line is a span containing only `<br>` (so manual selection keeps it).
+- Each snippet has a **Copy** button (copies the added lines). An edit snippet that has anchor lines also gets **Copy with context** (anchor plus added lines). Removed lines are never copied.
+- The page's script wires the buttons; keep it.
+
 Writing rules: reuse the visualisation skill's *Tone and wording* and *Writing rules* (`../visualisation/SKILL.md` §3). HTML-escape all code. Use the glossary's terms exactly. Give diagrams a caption saying what to look at.
 
 ## 6. Check completeness
@@ -126,6 +133,7 @@ Writing rules: reuse the visualisation skill's *Tone and wording* and *Writing r
 - Search the file for `{{`: zero matches.
 - Every `D#` is cited by at least one step; every step cites at least one `D#`.
 - Count change-set rows and steps: equal coverage, as §4 requires.
+- Every snippet follows the markup rules: no `+` or `−` characters inside line text, a copy button present, spans adjacent.
 - Every step has a Check with a command or click path, and every command appears in the verify table.
 - The Map section has all four parts: counts and legend, one overview Mermaid diagram (at most 8 nodes, labels at most about 24 characters, `useMaxWidth: false` in the setup), and grouped chips plus tables.
 - Count the table rows: the number equals the change set, every file appears once, deleted files carry the red `delete` badge, and the badge counts at the top match the rows.
