@@ -8,7 +8,9 @@ description: >
 
 The reader is a developer who will **edit the files themselves**. The agent plans, explains and reviews; the user types. The page is done when the user can follow it top to bottom, end up with a working feature, and explain every change afterwards.
 
-Source files stay untouched by the agent during this skill. The only files it writes are `GLOSSARY.md` / ADRs (via `domain-modeling`) and the guide page.
+Source files stay untouched by the agent during this skill. The only files it writes are `GLOSSARY.md` / ADRs (via `domain-modeling`) and the guide page. The audit in §7 may apply the snippets inside a throwaway `git worktree` copy; the real checkout is never edited.
+
+**Every snippet must be true.** A snippet that imports a symbol the file does not export, uses an undefined error code, or leaves out an import sends the reader into a debugging session of the agent's mistake. §4 sets the rules that prevent this, and §7 makes an independent sub-agent audit the guide before the user sees it.
 
 ## 0. Check the environment
 
@@ -70,7 +72,7 @@ Build the **change set** before writing any snippet. For each file the feature c
 
 Then sweep for what the user did not ask about, using Grep and Read:
 
-- **Consumers**: every importer and caller of each edited export, with file and line. A changed signature or return shape makes each one a change-set entry or an explicit "unaffected, because…".
+- **Consumers**: every importer and caller of each edited export, with file and line. A changed signature or return shape makes each one a change-set entry or an explicit "unaffected, because…". Name every affected file individually; "and the other callers" is a gap.
 - **Contracts**: types, schemas, API shapes, event names, DB migrations, config and env vars, feature flags, i18n keys, CSS class contracts.
 - **Tests**: existing tests that cover edited code, and the new tests the feature needs.
 - **Docs and glossary**: README, API docs, ADRs, `GLOSSARY.md` terms the feature adds.
@@ -93,14 +95,25 @@ One step is one file, or a tight pair that cannot compile apart. Each step carri
 |---|---|
 | **Where** | repo-relative path, `create` or `edit`, and the location in the file (after which function, near which line) |
 | **Why now** | what earlier steps made possible, in one sentence |
-| **Snippet** | real code written against the file as it is today: read the file first. Edits show 2–3 unchanged anchor lines, then the added and removed lines; a new file shows the whole file. Every snippet is paste-ready and follows the **snippet markup rules** below |
+| **Snippet** | real code written against the file as it is today: read the file first. Edits show 2–3 unchanged anchor lines, then the added and removed lines; a new file shows the whole file. Every snippet follows the **snippet correctness rules** below and the **snippet markup rules** in §5 |
 | **Explanation** | line-group by line-group: what it does, why it is there, which decision (`D#`) it serves |
 | **Check** | the exact command from the verify table (typecheck after type-affecting steps, lint and format on the edited file, the matching test) or a click path, and the expected result |
 | **If skipped** | what breaks, one sentence |
 
-Completion criterion: every change-set row appears in exactly one step, and every snippet compiles in your head against the current file contents.
+### Snippet correctness rules
 
-## 5. Build the page
+1. **Symbol ledger.** Before writing any snippet, build a ledger: for every file in the change set and every file a snippet imports from, the exports with kind and signature (parameters, return type, props type, default or named). Take existing files from reading them in this run; take new ones from the step that creates them. Look up every imported or used identifier in the ledger, with the exact name, casing, path and export style.
+2. **Imports are part of the snippet.** A snippet that uses a new symbol includes the import line as an added line (or the edited import statement) with its anchor lines, with a path verified against the target file. A snippet for a new file starts with its imports.
+3. **Define before use.** Types, error classes and codes, enum members, constants, i18n keys, routes and config keys are created in a step before the first step that uses them. When a use comes first, move the definition earlier.
+4. **Paste-ready.** Each snippet is complete, valid code: whole statements, whole functions, whole JSX elements, balanced braces. Elisions such as `...` or "rest unchanged" stay out of code; widen the anchor instead. Anchor lines and `data-n` numbers match the file as it is after the earlier steps.
+5. **Behaviour coverage.** For every decision, keep a decision → step matrix, and walk each state it mentions: create versus update, move or reorder, delete and cascade, cancel, failure paths, empty and first-use cases. Every state the feature can reach is saved, sent or shown by some step.
+6. **Checks match the step.** A step's Check runs only commands and files that exist after that step and the steps before it. A check on a later file moves to the step that creates it.
+
+Completion criterion: every change-set row appears in exactly one step, every identifier in every snippet resolves in the ledger, and every snippet is complete code.
+
+## 5. Build the draft page
+
+Write the page to a **draft** file outside the repo: `<tmp>/guided-<slug>-draft.html` (the session scratchpad when the environment names one, else the OS temp folder). The final file goes to `.visual-guides/` only after §7 reports clean.
 
 **Copy [`template.html`](template.html) and fill it. Never write the page from scratch**: the template carries the readable-size diagram settings, the chip map, the file-status colours and the step checkboxes, and a page without them renders tiny diagrams. It shares the look of `../visualisation/template.html` (Tailwind and Mermaid from CDN, light and dark mode) and adds step cards with checkboxes. Sections, in order:
 
@@ -128,7 +141,9 @@ Completion criterion: every change-set row appears in exactly one step, and ever
 
 Writing rules: reuse the visualisation skill's *Tone and wording* and *Writing rules* (`../visualisation/SKILL.md` §3). HTML-escape all code. Use the glossary's terms exactly. Give diagrams a caption saying what to look at.
 
-## 6. Check completeness
+## 6. Check the draft yourself
+
+Mechanical checks first, so the auditor spends its effort on meaning:
 
 - Search the file for `{{`: zero matches.
 - Every `D#` is cited by at least one step; every step cites at least one `D#`.
@@ -138,11 +153,41 @@ Writing rules: reuse the visualisation skill's *Tone and wording* and *Writing r
 - The Map section has all four parts: counts and legend, one overview Mermaid diagram (at most 8 nodes, labels at most about 24 characters, `useMaxWidth: false` in the setup), and grouped chips plus tables.
 - Count the table rows: the number equals the change set, every file appears once, deleted files carry the red `delete` badge, and the badge counts at the top match the rows.
 - Every chip links to an existing `#step-N`, and group names and step ranges match between the map and the Steps section.
-- Open the page (command from §0) and confirm Mermaid and Tailwind render, in light and dark mode and at phone width.
+- Every snippet follows the correctness rules in §4: ledger lookups done, imports present, definitions before use.
 
-## 7. Deliver and hand over
+## 7. Audit with a sub-agent, fix, repeat
 
-Save to `.visual-guides/<YYYY-MM-DD>-<slug>-plan.html` at the repo root. If `.visual-guides/` is not git-ignored, tell the user. Reply with the path, the one-minute summary, the list of decisions, and the first step's file; leave the rest on the page.
+The author of a guide is the worst reviewer of it. Before the user sees anything, an **independent auditor** reviews the draft. Spawn it with the Agent tool (`general-purpose`, fresh context). It starts from the repo and the draft, not from your conclusions.
+
+**Brief for the auditor** (the whole brief; add no verdicts or reassurances of your own): the draft path, the repo root, the decisions list, the change set, the verify table, and this checklist:
+
+| # | Check |
+|---|---|
+| A | **Imports and identifiers.** Every identifier in every snippet resolves: an export read from the repo now, or defined in an earlier step. Import lines are present, paths resolve, named versus default export matches, signatures, parameter lists, return types and props types match the exporting file. |
+| B | **Define before use.** Error codes and classes, types, enums, constants, i18n keys, routes and config keys exist in an earlier step than their first use. Nothing is undefined. |
+| C | **Paste-ready.** Each snippet is complete, valid code with no elisions, no half-written JSX, balanced braces; anchor lines and line numbers match the file as it is after the earlier steps. |
+| D | **Behaviour coverage.** Every decision is implemented. Walk the states: create versus update, move or reorder, delete, cancel, failure, empty, first use. Report any state where data is never saved, sent or shown. |
+| E | **Consumers.** Every file that uses a changed export or contract is in the change set, or in "checked, unaffected" with a reason. Every affected file is named. |
+| F | **Order and checks.** No step needs something a later step creates. Each Check runs only on files that exist at that step. |
+| G | **Consistency.** Names, glossary terms, counts, chips, tables, group ranges and snippet markup agree across the page. |
+
+**Strongest method:** when the project has a typecheck script, the auditor applies the snippets step by step in a throwaway `git worktree` under the temp folder (reusing the repo's `node_modules` by symlink), runs the verify commands after each step, and removes the worktree afterwards. It never touches the real checkout. When that cannot run (no typecheck, missing dependencies), the auditor does a static review reading every target file, and reports "static review only".
+
+**Report format:** a verdict, `CLEAN` or `NOT CLEAN`, then a table of findings: id, severity (blocker, major, minor), step, file, evidence (what the repo or another step really says), and the proposed fix. `CLEAN` means zero findings.
+
+**Scale:** one auditor for 12 steps or fewer. For larger plans, spawn in one message one auditor per area group plus one cross-cutting auditor for D, E, F and G.
+
+**The loop:**
+1. Run the audit.
+2. Fix every finding in the draft, re-reading the real files for each fix; correct the ledger and the decision matrix as well.
+3. Re-run the audit on the changed steps plus the cross-cutting checks.
+4. Stop at `CLEAN`. After 3 rounds without `CLEAN`, tell the user the remaining findings and let them decide; never present the guide as verified.
+
+Only after `CLEAN`: copy the draft to the final path (§8) with one addition, the **audit line** in the page header: `Audited: <n> rounds, clean, <applied in worktree and typechecked | static review only>`. Open the page in the browser (command from §0) only then, and confirm Mermaid and Tailwind render, in light and dark mode and at phone width.
+
+## 8. Deliver and hand over
+
+Save the audited draft to `.visual-guides/<YYYY-MM-DD>-<slug>-plan.html` at the repo root. If `.visual-guides/` is not git-ignored, tell the user. Reply with the path, the audit result (rounds, method, findings fixed in one line), the one-minute summary, the list of decisions, and the first step's file; leave the rest on the page.
 
 Then wait. The user edits the files. When they return:
 

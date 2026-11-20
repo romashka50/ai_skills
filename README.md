@@ -203,9 +203,10 @@ Plain language works too: *"Explain what changed, why, and what it affects. I'm 
 1. Maps the entry points and the closest existing feature, and finds the project's verify tasks (typecheck, ESLint, Prettier, tests) from the nearest `package.json` scripts, falling back to config files. If several scripts fit one task it asks you to pick, and proceeds with a recommended check-only script when you don't answer.
 2. Grills you on the idea. With new domain terms it runs `grilling` plus `domain-modeling` (like `/grill-with-docs`) and records decisions in `GLOSSARY.md`; for purely technical work it runs `grilling` alone (like `/grill-me`).
 3. Finds every file to touch, every consumer of edited code, and contracts, tests and docs affected.
-4. Orders the steps so the project works after each one: prefactor first, then one thin slice through every layer.
-5. Builds one HTML page: the decisions, a map of the work (counts, a diagram of how the pieces fit, and files grouped by area such as backend and UI, each group collapsible and showing colour-coded chips and a file table: new green, edited yellow, deleted red, test brown), and one card per step with the file, a paste-ready snippet, an explanation, a check command and a progress checkbox.
-6. After you finish editing, reviews your result against the plan with `/code-review` and `/visualisation`.
+4. Orders the steps so the project works after each one: prefactor first, then one thin slice through every layer. Snippets are written from a ledger of real exports and signatures, and include their imports.
+5. Writes a draft HTML page: the decisions, a map of the work (counts, a diagram of how the pieces fit, and files grouped by area such as backend and UI, each group collapsible and showing colour-coded chips and a file table: new green, edited yellow, deleted red, test brown), and one card per step with the file, a paste-ready snippet, an explanation, a check command and a progress checkbox.
+6. Has an independent sub-agent audit the draft before you see it: every import and identifier must resolve, definitions must come before use, snippets must be complete code, and every decision and state (create, move, delete, failure) must be covered. When the project has a typecheck, the auditor applies the steps in a throwaway worktree and runs it. Findings are fixed and re-audited until clean (at most 3 rounds), and only then is the page saved and opened.
+7. After you finish editing, reviews your result against the plan with `/code-review` and `/visualisation`.
 
 **Try it**
 
