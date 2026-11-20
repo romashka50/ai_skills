@@ -3,7 +3,7 @@
   "version": "1.1.0",
   "description": "AI agent skills that help you understand code before and after you change it: visual change guides, usage trees, change-impact maps and file-by-file feature build guides.",
   "private": true,
-  "author": "romashka50 <roma.buchuk@yahoo.com>",
+  "author": "romashka50 <roma.buchuk@gmail.com>",
   "keywords": [
     "ai",
     "agent-skills",
