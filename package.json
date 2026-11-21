@@ -1,6 +1,6 @@
 {
   "name": "ai_skills",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "AI agent skills that help you understand code before and after you change it: visual change guides, usage trees, change-impact maps and file-by-file feature build guides.",
   "private": true,
   "author": "romashka50 <roma.buchuk@gmail.com>",

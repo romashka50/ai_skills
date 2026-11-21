@@ -45,7 +45,7 @@ The Check line of every step and the final "Done when" run the project's own tas
 3. **Fall back to config files** when a task has no script: `tsconfig.json` → `npx tsc --noEmit`; `eslint.config.*` or `.eslintrc*` → `npx eslint <edited files>`; `.prettierrc*` or `prettier.config.*` → `npx prettier --check <edited files>`. Name these "own commands" in the table. Non-JS projects: use the equivalent from `pyproject.toml`, `Makefile`, `go.mod` and similar.
 4. **Prefer check-only variants.** The user edits by hand, so a script that rewrites files (`lint:fix`, `format`, `--write`) is a *fix* command: list it as an optional follow-up, and pick the matching check variant for the Check lines.
 
-**When one task has several candidates** (for example `type-check` and `tsc:build`, or `lint` and `lint:ci`), ask the user once, one question covering every ambiguous task, with the recommended script first and marked. If the user does not answer (away, skipped, "you pick"), continue with the recommended one. The agent cannot run a clock, so the default applies to a missing or declined answer, never to a timer; tell the user so in one line when you ask. Choose the recommendation by: check-only over fixing, scoped to the edited package over repo-wide, fastest over slowest.
+**When one task has several candidates** (for example `type-check` and `tsc:build`, or `lint` and `lint:ci`), ask the user once, one question covering every ambiguous task, with the recommended script first and marked. If the user skips the question or says "you pick", continue with the recommended one, and say so in one line. Do not promise a timeout: the agent cannot detect that the user is away. In a non-interactive run, where no answer can come, use the recommended one at once. Choose the recommendation by: check-only over fixing, scoped to the edited package over repo-wide, fastest over slowest.
 
 Completion criterion: a verify table with one row per task (typecheck, lint, format, test, build when relevant): the exact command, the `package.json` or config it came from, and whether it was a script, an own command, or the user's pick.
 
@@ -139,13 +139,13 @@ Write the page to a **draft** file outside the repo: `<tmp>/guided-<slug>-draft.
 - Each snippet has a **Copy** button (copies the added lines). An edit snippet that has anchor lines also gets **Copy with context** (anchor plus added lines). Removed lines are never copied.
 - The page's script wires the buttons and a `copy` handler that cleans any manual selection (numbers, signs and removed lines dropped); keep both.
 
-Writing rules: reuse the visualisation skill's *Tone and wording* and *Writing rules* (`../visualisation/SKILL.md` §3). HTML-escape all code. Use the glossary's terms exactly. Give diagrams a caption saying what to look at.
+Writing rules: reuse the visualisation skill's *Tone and wording* and *Writing rules* (`../visualisation/SKILL.md` §3), except the ones this page overrides: it carries a script (copy buttons, step checkboxes) and shows `+`/`−` as CSS-generated signs, not text. HTML-escape all code. Use the glossary's terms exactly. Give diagrams a caption saying what to look at.
 
 ## 6. Check the draft yourself
 
 Mechanical checks first, so the auditor spends its effort on meaning:
 
-- Search the file for `{{`: zero matches.
+- Search the file for the placeholder shape `\{\{[A-Z]` (not a bare `{{`, which snippets of JSX, Vue or Jinja legitimately contain): zero matches outside code snippets.
 - Every `D#` is cited by at least one step; every step cites at least one `D#`.
 - Count change-set rows and steps: equal coverage, as §4 requires.
 - Every snippet follows the markup rules: no `+` or `−` characters or row numbers inside line text, every `.ctx` and `.add` span has `data-n`, a copy button present, spans adjacent.
@@ -171,7 +171,7 @@ The author of a guide is the worst reviewer of it. Before the user sees anything
 | F | **Order and checks.** No step needs something a later step creates. Each Check runs only on files that exist at that step. |
 | G | **Consistency.** Names, glossary terms, counts, chips, tables, group ranges and snippet markup agree across the page. |
 
-**Strongest method:** when the project has a typecheck script, the auditor applies the snippets step by step in a throwaway `git worktree` under the temp folder (reusing the repo's `node_modules` by symlink), runs the verify commands after each step, and removes the worktree afterwards. It never touches the real checkout. When that cannot run (no typecheck, missing dependencies), the auditor does a static review reading every target file, and reports "static review only".
+**Strongest method:** when the project has a typecheck script, the auditor applies the snippets step by step in a throwaway `git worktree` under the temp folder (reusing the repo's `node_modules` by symlink). The snippets were written against the working tree, so first copy its uncommitted state into the worktree (`git diff HEAD` applied with `git apply`, plus the untracked files); a worktree cut from `HEAD` alone would report false findings. It runs the verify commands after each step, and removes the worktree afterwards. It never touches the real checkout. When that cannot run (no typecheck, missing dependencies), the auditor does a static review reading every target file, and reports "static review only".
 
 **Report format:** a verdict, `CLEAN` or `NOT CLEAN`, then a table of findings: id, severity (blocker, major, minor), step, file, evidence (what the repo or another step really says), and the proposed fix. `CLEAN` means zero findings.
 

@@ -166,11 +166,11 @@
     <div class="card"><h3>Before</h3><p>{{BEFORE: one sentence}}</p>
       <!-- DIAGRAM, pick per the skill's table; mix tools across the page.
 
-      (a) Mermaid, wrapped in a card:
+      (a) Mermaid, wrapped in a card (arrows are written as dash-dash-&gt; here so they do not close this comment; use the real arrow in your page):
       <div class="mermaid-card"><pre class="mermaid">
         flowchart LR
-          A[Handler] --> B[Validator]
-          B -.leak.-> C[PricingClient]
+          A[Handler] --&gt; B[Validator]
+          B -.leak.-&gt; C[PricingClient]
           classDef leak stroke:#dc2626,stroke-width:2px;
           class B,C leak
       </pre></div>
@@ -189,7 +189,8 @@
         </defs>
         <rect class="box" x="20" y="20" width="120" height="50" rx="6"/><text class="lbl" x="30" y="50">handler</text>
         <path class="edge" d="M140 45 H220"/>
-      </svg> -->
+      </svg>
+      (delete this whole comment once the diagram is in place) -->
     </div>
     <div class="card"><h3>After</h3><p>{{AFTER: one sentence}}</p>
       <!-- Same size and tool family as Before; the changed step is marked (Mermaid: classDef changed stroke:#3557c4,stroke-width:4px; SVG/Tailwind: class "box changed" / border-[var(--accent)]). -->

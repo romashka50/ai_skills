@@ -117,7 +117,7 @@ Count the changed lines in the scoped diff (`git diff HEAD --numstat` gives adde
 
 Then check the page itself:
 
-- Every `{{PLACEHOLDER}}` and template comment is gone (search the file for `{{`: zero matches; use the Grep tool, not a shell-specific command).
+- Every `{{PLACEHOLDER}}` and template comment is gone. Search with the Grep tool (not a shell-specific command) for the placeholder shape `\{\{[A-Z@]` and for `<!-- ` template comments: zero matches. Do not search for a bare `{{`: code shown in the walkthrough (JSX `style={{…}}`, Vue, Jinja, Go templates) legitimately contains it.
 - Every diagram has a caption or label saying what to look at, and the changed step is visibly marked.
 - Open the file in a browser if the environment allows (use the command for this OS from section 0) and confirm the Mermaid and Tailwind output renders (no raw `flowchart` text, no unstyled page) and that every diagram's text is readable at 100% zoom: no diagram scrolls sideways, none has tiny labels; split any that do and the page reads in both light and dark mode and at phone width.
 

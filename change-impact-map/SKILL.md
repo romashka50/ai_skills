@@ -22,31 +22,10 @@ First do `../visualisation/SKILL.md` §0 (detect OS, pick the Python command and
 Use `../visualisation/SKILL.md` §1 (Pin the scope): same prompt-to-git-source table, same "narrow by subject, list what you left out" rule. Default to "everything on this branch vs its merge-base, including uncommitted work". Map the result to the analyzer flags: `--base <ref>`, `--head <ref>` (default is the working tree), `--depth N` (consumer hops, default 3).
 
 ### 2. Run the analyzer
-```bash
-<python> <skills>/component-usage-tree/scripts/analyze_changes.py --repo <repo-root> --out impact-graph.json
-```
-Choose `<python>` and `<skills>` as `../visualisation/SKILL.md` §0 says (`python3` on macOS and Linux, `python` or `py -3` on Windows; `<skills>` is the parent folder of this skill's folder). Run the command with the repository root as the working directory. The scripts need only Python 3 and git, and write UTF-8 on every OS.
-Details of the analyzer and its limits: `../component-usage-tree/SKILL.md` step 2. It prints one summary line. If it reports no changed source files, check `--base`. It supports JS/TS/JSX/TSX, Vue, Svelte and Python, resolves `tsconfig` path aliases, follows re-exports through barrel `index` files, and handles deleted and renamed files.
-
-If the repo already has a stronger graph source (for example codegraph, dependency-cruiser, madge, an `.understand-anything/knowledge-graph.json`, or a TypeScript AST/MCP tool) you may use it to fill in gaps, but keep the output in the same JSON shape so the viewer still works. Mention in the summary which source you used.
+Do `../component-usage-tree/SKILL.md` step 2 unchanged (same command, same `<python>` and `<skills>` rules, same option to use a stronger graph source in the same JSON shape). Run it from the repository root and write `impact-graph.json`.
 
 ### 3. Review what the scripts can't see
-Open `impact-graph.json` and read the diff of the top changed files (highest `fanIn`, any `high` risk). Static regex analysis cannot see changed return shapes, default values, side effects, context/provider requirements, event names, CSS class contracts or string-keyed lookups. Read `../component-usage-tree/references/risk-signals.md` for what to look for and how to rate severity.
-
-Add your findings to the JSON, anchored on real node ids from the graph:
-```json
-{
-  "meta": { "summary": "Button now requires `variant` and `size`; 3 of 4 callers don't pass them." },
-  "risks": [
-    { "severity": "medium", "source": "review", "nodeId": "src/utils/format.ts",
-      "title": "formatLabel now upper-cases output",
-      "detail": "Snapshot tests and any case-sensitive comparison on the result will change.",
-      "related": ["src/hooks/useCheckout.ts"] }
-  ],
-  "nodes": [ { "id": "src/components/Modal.tsx", "note": "Close button needs size=\"sm\"." } ]
-}
-```
-(Change `meta.summary`, append to `risks`, set `note` on existing node objects. Don't invent node ids: the builder drops any finding that points at a node it can't find.) Do not repeat a risk the analyzer already raised; refine it with a `note` instead.
+Do `../component-usage-tree/SKILL.md` step 3 unchanged: read the top changed files' diffs against `../component-usage-tree/references/risk-signals.md`, then add `meta.summary`, `risks[]` and `nodes[].note` anchored on real node ids. The builder drops findings that point at an unknown node, so never invent ids.
 
 ### 4. Write the guide (the visualisation part)
 Follow `../visualisation/SKILL.md` §2-§4 end to end, on the same scope: find the why for every hunk, fill `../visualisation/template.html`, run the completeness count ("N of N changed lines explained"). Use the impact data instead of re-deriving it:

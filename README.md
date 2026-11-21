@@ -140,7 +140,7 @@ Plain language works too, without the slash command: *"Explain everything about 
 
 **Good to know**
 - Supports JS/TS/JSX/TSX, Vue, Svelte and Python.
-- Resolves `tsconfig` path aliases and follows re-exports through barrel `index` files.
+- Resolves `tsconfig`/`jsconfig` path aliases (including `extends` and per-package configs) and follows re-exports through barrel `index` files.
 - Needs Python 3 and git only.
 - Want the explanation too? Use [change-impact-map](#change-impact-map).
 
@@ -200,7 +200,7 @@ Plain language works too: *"Explain what changed, why, and what it affects. I'm 
 - You want to understand and write the change yourself rather than delegate it.
 
 **What it does**
-1. Maps the entry points and the closest existing feature, and finds the project's verify tasks (typecheck, ESLint, Prettier, tests) from the nearest `package.json` scripts, falling back to config files. If several scripts fit one task it asks you to pick, and proceeds with a recommended check-only script when you don't answer.
+1. Maps the entry points and the closest existing feature, and finds the project's verify tasks (typecheck, ESLint, Prettier, tests) from the nearest `package.json` scripts, falling back to config files. If several scripts fit one task it asks you to pick; if you skip the question it uses the recommended check-only script.
 2. Grills you on the idea. With new domain terms it runs `grilling` plus `domain-modeling` (like `/grill-with-docs`) and records decisions in `GLOSSARY.md`; for purely technical work it runs `grilling` alone (like `/grill-me`).
 3. Finds every file to touch, every consumer of edited code, and contracts, tests and docs affected.
 4. Orders the steps so the project works after each one: prefactor first, then one thin slice through every layer. Snippets are written from a ledger of real exports and signatures, and include their imports.
@@ -260,9 +260,17 @@ guided-implementation      → plans a feature before you write it
 ```
 skills/
 ├── visualisation/          SKILL.md, template.html
-├── component-usage-tree/   SKILL.md, scripts/, references/, assets/template.html
+├── component-usage-tree/   SKILL.md, scripts/, references/, assets/template.html, tests/
 ├── change-impact-map/      SKILL.md
 └── guided-implementation/  SKILL.md, template.html
+```
+
+## Tests
+
+The usage-tree scripts have regression tests (each builds a throwaway git repo):
+
+```bash
+python3 -B -m unittest discover -s component-usage-tree/tests -v
 ```
 
 ## Requirements
