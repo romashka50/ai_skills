@@ -25,10 +25,10 @@ for _stream in (sys.stdout, sys.stderr):
     except Exception:
         pass
 
-JS_EXT = ('.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.vue', '.svelte')
+JS_EXT = ('.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs', '.vue', '.svelte')
 PY_EXT = ('.py',)
 SRC_EXT = JS_EXT + PY_EXT
-RESOLVE_EXT = ['', '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.vue', '.svelte', '.py']
+RESOLVE_EXT = ['', '.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs', '.vue', '.svelte', '.py']
 TEST_RE = re.compile(r'(\.(test|spec)\.[jt]sx?$|(^|/)__tests__/|(^|/)tests?/|(^|/)test_[^/]*\.py$|_test\.py$|\.stories\.[jt]sx?$)')
 
 
@@ -104,29 +104,104 @@ def inventory(repo):
 
 
 # ---------- alias / resolution ----------
-def load_aliases(root):
-    aliases, base_url = [], ''
-    for name in ('tsconfig.json', 'jsconfig.json'):
-        p = os.path.join(root, name)
-        if not os.path.exists(p):
+def strip_jsonc(raw):
+    """Remove // and /* */ comments and trailing commas, leaving string contents untouched."""
+    out, i, n, in_str = [], 0, len(raw), False
+    while i < n:
+        c = raw[i]
+        if in_str:
+            out.append(c)
+            if c == '\\' and i + 1 < n:
+                out.append(raw[i + 1]); i += 1
+            elif c == '"':
+                in_str = False
+        elif c == '"':
+            in_str = True; out.append(c)
+        elif raw.startswith('//', i):
+            while i < n and raw[i] != '\n':
+                i += 1
             continue
+        elif raw.startswith('/*', i):
+            j = raw.find('*/', i + 2)
+            i = n if j < 0 else j + 2
+            continue
+        else:
+            out.append(c)
+        i += 1
+    return re.sub(r',(\s*[}\]])', r'\1', ''.join(out))
+
+
+def read_tsconfig(path, seen=()):
+    """Return (baseUrl_abs|None, paths|None, paths_dir) for one tsconfig, following relative `extends`."""
+    path = os.path.abspath(path)
+    if path in seen or not os.path.isfile(path):
+        return None, None, None
+    with open(path, encoding='utf-8') as f:
+        cfg = json.loads(strip_jsonc(f.read()))
+    here = os.path.dirname(path)
+    base, paths, pdir = None, None, here
+    ext = cfg.get('extends')
+    for e in ([ext] if isinstance(ext, str) else (ext or [])):
+        if not e.startswith('.'):
+            continue  # package extends (node_modules) are not analysed
+        ep = os.path.normpath(os.path.join(here, e))
+        for cand in (ep, ep + '.json'):
+            if os.path.isfile(cand):
+                b2, p2, d2 = read_tsconfig(cand, seen + (path,))
+                if b2 is not None:
+                    base = b2
+                if p2 is not None:
+                    paths, pdir = p2, d2
+                break
+    co = cfg.get('compilerOptions', {}) or {}
+    if co.get('baseUrl') is not None:
+        base = os.path.normpath(os.path.join(here, co['baseUrl']))
+    if co.get('paths'):
+        paths, pdir = co['paths'], here
+    return base, paths, pdir
+
+
+def load_aliases(root, config_files=None):
+    """Scoped aliases from every tsconfig.json / jsconfig.json (repo root and sub-packages).
+
+    Returns (aliases, base_urls). aliases: [(scope_dir, prefix, [repo-relative target prefixes])];
+    base_urls: [(scope_dir, repo-relative dir)]. A config only applies to files under its own folder."""
+    if config_files is None:
+        config_files = [n for n in ('tsconfig.json', 'jsconfig.json') if os.path.exists(os.path.join(root, n))]
+    aliases, base_urls, warned = [], [], []
+
+    def rel(p):
+        r = os.path.relpath(p, root).replace(os.sep, '/')
+        return '' if r == '.' else r
+
+    for cf in config_files:
+        full = os.path.join(root, cf)
+        scope = posixpath.dirname(cf)
         try:
-            raw = open(p, encoding='utf-8').read()
-            raw = re.sub(r'/\*.*?\*/', '', raw, flags=re.S)
-            raw = re.sub(r'(^|[^:"])//.*', r'\1', raw)
-            raw = re.sub(r',(\s*[}\]])', r'\1', raw)
-            co = json.loads(raw).get('compilerOptions', {})
-            base_url = co.get('baseUrl', '') or ''
-            for k, v in (co.get('paths') or {}).items():
-                aliases.append((k.rstrip('*'), [t.rstrip('*') for t in v]))
-        except Exception:
-            pass
-        break
-    return aliases, base_url
+            base, paths, pdir = read_tsconfig(full)
+        except Exception as ex:
+            warned.append(f'{cf}: {ex}')
+            continue
+        if base is not None:
+            base_urls.append((scope, rel(base)))
+        for k, v in (paths or {}).items():
+            anchor = base if base is not None else pdir
+            aliases.append((scope, k.rstrip('*'), [rel(os.path.join(anchor, t.rstrip('*'))) + ('/' if t.endswith('*') or t.endswith('/') else '') for t in v]))
+    for w in warned:
+        print('warning: could not read tsconfig, aliases from it are ignored -', w, file=sys.stderr)
+    return aliases, base_urls
+
+
+JS_TO_TS = {'.js': ('.ts', '.tsx'), '.jsx': ('.tsx',), '.mjs': ('.mts',), '.cjs': ('.cts',)}
 
 
 def try_file(cand, files):
     cand = posixpath.normpath(cand).replace('\\', '/')
+    # NodeNext/ESM style: "./util.js" in source points at util.ts
+    stem, ext0 = posixpath.splitext(cand)
+    for alt in JS_TO_TS.get(ext0, ()):
+        if stem + alt in files:
+            return stem + alt
     for ext in RESOLVE_EXT:
         if cand + ext in files:
             return cand + ext
@@ -138,17 +213,27 @@ def try_file(cand, files):
     return None
 
 
-def resolve_js(spec, src, files, aliases, base_url):
+def in_scope(scope, src):
+    return scope == '' or src.startswith(scope + '/')
+
+
+def resolve_js(spec, src, files, aliases, base_urls):
     if spec.startswith('.'):
         return try_file(posixpath.join(posixpath.dirname(src), spec), files)
-    for prefix, targets in aliases:
-        if prefix and spec.startswith(prefix):
+    for scope, prefix, targets in aliases:
+        if not prefix or not in_scope(scope, src):
+            continue
+        wildcard = prefix.endswith('/') or any(t.endswith('/') for t in targets)
+        if (wildcard and spec.startswith(prefix)) or spec == prefix:
             for t in targets:
-                r = try_file(posixpath.join(base_url, t + spec[len(prefix):]), files)
+                r = try_file(t + spec[len(prefix):] if t.endswith('/') else t, files)
                 if r:
                     return r
-    if base_url:
-        return try_file(posixpath.join(base_url, spec), files)
+    for scope, bdir in sorted(base_urls, key=lambda x: -len(x[0])):
+        if in_scope(scope, src):
+            r = try_file(posixpath.join(bdir, spec), files)
+            if r:
+                return r
     return None
 
 
@@ -208,7 +293,8 @@ def parse_js_imports(text, src, files, aliases, base_url):
         add(m.group(4), [(a, '') for a, _ in names], m, 'reexport')
         res[-1]['exposed'] = names
     for m in re.finditer(r'(?:(?:const|let|var)\s+(?:([\w$]+)|\{([^}]*)\})\s*=\s*)?require\(\s*[\'"]([^\'"]+)[\'"]\s*\)', text):
-        names = [('default', m.group(1))] if m.group(1) else (parse_names(m.group(2)) if m.group(2) else [])
+        # `const lib = require(x)` binds the whole module (CommonJS has no default/named split)
+        names = [('*', m.group(1))] if m.group(1) else (parse_names(m.group(2).replace(':', ' as ')) if m.group(2) else [])
         add(m.group(3), names, m, 'require')
     for m in re.finditer(r'(?:([\w$]+)\s*=\s*(?:\w+\.)?lazy\(\s*\(\)\s*=>\s*)?import\(\s*[\'"]([^\'"]+)[\'"]\s*\)', text):
         add(m.group(2), [('default', m.group(1))] if m.group(1) else [], m, 'lazy')
@@ -227,7 +313,7 @@ def parse_py_imports(text, src, files):
                     i += 1
                     clause += ' ' + lines[i]
             clause = clause.replace('(', '').replace(')', '').split('#')[0]
-            names = parse_names(clause)
+            names = [('*', '')] if clause.strip() == '*' else parse_names(clause)  # `from x import *` uses the whole module
             target = resolve_py(m.group(2), len(m.group(1)), src, files)
             # "from pkg import submodule"
             for a, b in names:
@@ -257,8 +343,8 @@ def parse_imports(text, path, files, aliases, base_url):
 
 
 EXPORT_PATTERNS = [
-    r'export\s+default\s+(?:async\s+)?(?:function\*?|class)\s+([\w$]+)',
-    r'export\s+(?:declare\s+)?(?:async\s+)?(?:function\*?|class|const|let|var|type|interface|enum)\s+([\w$]+)',
+    r'export\s+default\s+(?:abstract\s+)?(?:async\s+)?(?:function\*?|class)\s+([\w$]+)',
+    r'export\s+(?:declare\s+)?(?:abstract\s+)?(?:async\s+)?(?:function\*?|class|(?:const\s+)?enum|const|let|var|type|interface|namespace)\s+([\w$]+)',
 ]
 
 
@@ -278,6 +364,19 @@ def list_exports(text, path):
     for m in re.finditer(r'export\s*\{([^}]*)\}(?!\s*from)', text):
         for a, b in parse_names(m.group(1)):
             ex.add(b)
+    for m in re.finditer(r'export\s+(?:const|let|var)\s*\{([^}]*)\}', text):  # export const { a, b } = obj
+        for a, b in parse_names(re.sub(r':\s*', ' as ', m.group(1))):
+            ex.add(b)
+    # CommonJS
+    for m in re.finditer(r'(?m)^\s*(?:module\.)?exports\.([\w$]+)\s*=', text):
+        ex.add(m.group(1))
+    for m in re.finditer(r'module\.exports\s*=\s*\{([^}]*)\}', text):
+        for item in m.group(1).split(','):
+            km = re.match(r'\s*([\w$]+)\s*(?::|$|\()', item)
+            if km:
+                ex.add(km.group(1))
+    if re.search(r'module\.exports\s*=(?!\s*\{)', text):
+        ex.add('default')
     if re.search(r'export\s+default\b', text):
         ex.add('default')
     if path.endswith(('.vue', '.svelte')):
@@ -302,12 +401,13 @@ def diff_hunks(repo, path):
         args.append(repo.head)
     out = repo.git(*args, '--', path, check=False)
     hunks, added_removed = [], []
-    for line in out.splitlines():
+    # split on '\n' only: str.splitlines() also splits on form feed and U+2028 that can sit inside a code line
+    for line in out.split('\n'):
         m = re.match(r'@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@', line)
         if m:
             s, c = int(m.group(1)), int(m.group(2) or 1)
             hunks.append((s, s + max(c, 1) - 1))
-        elif line[:1] in '+-' and not line.startswith(('+++', '---')):
+        elif line and line[0] in '+-' and not line.startswith(('+++', '---')):
             added_removed.append(line)
     return hunks, added_removed
 
@@ -448,7 +548,13 @@ def main():
 
     root = os.path.abspath(a.repo)
     repo = Repo(root, a.base, a.head)
-    repo.base = a.base or detect_base(repo)
+    if a.base:
+        # A branch name means "since it diverged", like `git diff base...head`: use the merge-base,
+        # otherwise commits that landed on the base branch after the fork show up as reverse changes.
+        mb = repo.git('merge-base', a.base, 'HEAD' if a.head == 'WORKTREE' else a.head, check=False).strip()
+        repo.base = mb or a.base
+    else:
+        repo.base = detect_base(repo)
     changes = changed_files(repo)
     if not changes:
         raise SystemExit('No changed source files found (checked ' + ', '.join(SRC_EXT) + '). Try --base <ref>.')
@@ -456,7 +562,9 @@ def main():
     files = inventory(repo)
     deleted = {p for p, v in changes.items() if v['status'] == 'deleted'}
     resolvable = files | deleted
-    aliases, base_url = load_aliases(root)
+    cfgs = [f for f in (repo.git('ls-files', '*tsconfig.json', '*jsconfig.json', check=False).splitlines())
+            if posixpath.basename(f) in ('tsconfig.json', 'jsconfig.json')]
+    aliases, base_url = load_aliases(root, cfgs)
 
     # parse every source file once
     parsed = {}
@@ -545,6 +653,9 @@ def main():
             hunks, lines = diff_hunks(repo, p)
             n['added'] = sum(1 for l in lines if l[0] == '+')
             n['removed'] = sum(1 for l in lines if l[0] == '-')
+            if ch['status'] == 'added' and not lines and text:
+                # untracked file: git diff does not see it, so every line is an addition
+                n['added'] = text.count('\n') + (0 if text.endswith('\n') else 1)
             n['_difflines'] = lines
             if ch['status'] == 'added':
                 n['changedSymbols'] = sorted(exports_now[p])

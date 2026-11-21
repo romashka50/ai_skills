@@ -84,4 +84,5 @@ Run the scripts and fill `assets/template.html` through them. Reading either fil
 - `scripts/build_report.py`: validate agent additions, render HTML, optional Mermaid; `--guide` is used by `change-impact-map`
 - `assets/template.html`: the viewer (single file, vanilla JS and SVG)
 - `references/risk-signals.md`: what to check by kind of change, severity rubric
+- `tests/test_scripts.py`: regression tests; run `python3 -B -m unittest discover -s tests` from this folder after editing a script
 - `references/prior-art.md`: existing skills and tools this builds on

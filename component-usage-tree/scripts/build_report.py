@@ -48,16 +48,36 @@ def validate(g):
     return warn
 
 
-FILE_BLOCK = re.compile(r'<details\b[^>]*\bdata-node="([^"]+)"[^>]*>.*?</details>', re.S)
+FILE_OPEN = re.compile(r'<details\b[^>]*\bdata-node="([^"]+)"[^>]*>', re.S)
+DETAILS_TAG = re.compile(r'<(/?)details\b', re.I)
+
+
+def file_blocks(guide_html):
+    """Yield (node_id, block_html) for each <details data-node="..."> including any nested <details>."""
+    pos = 0
+    while True:
+        m = FILE_OPEN.search(guide_html, pos)
+        if not m:
+            return
+        depth, end = 1, None
+        for t in DETAILS_TAG.finditer(guide_html, m.end()):
+            depth += -1 if t.group(1) else 1
+            if depth == 0:
+                end = guide_html.find('>', t.end()) + 1
+                break
+        if end is None:  # unbalanced markup: take the rest of the page rather than drop the block
+            end = len(guide_html)
+        yield m.group(1), guide_html[m.start():end]
+        pos = end
 
 
 def attach_guides(g, guide_html):
     """Copy each walkthrough block (<details class="file" data-node="path">) onto its graph node."""
     ids = {n['id']: n for n in g['nodes']}
     warn, found = [], set()
-    for m in FILE_BLOCK.finditer(guide_html):
-        node_id = html.unescape(m.group(1))
-        block = re.sub(r'<script\b.*?</script>', '', m.group(0), flags=re.S | re.I)
+    for raw_id, raw_block in file_blocks(guide_html):
+        node_id = html.unescape(raw_id)
+        block = re.sub(r'<script\b.*?</script>', '', raw_block, flags=re.S | re.I)
         block = re.sub(r'\son\w+="[^"]*"', '', block)
         if node_id not in ids:
             warn.append(f"walkthrough block data-node={node_id!r} matches no graph node, not linked")
@@ -68,7 +88,7 @@ def attach_guides(g, guide_html):
         ids[node_id]['guide'] = block
         found.add(node_id)
     for n in g['nodes']:
-        if n['role'] == 'changed' and n['id'] not in found:
+        if n['role'] == 'changed' and n['id'] not in found and not n.get('renamedTo'):  # the old path of a rename has no block by design
             warn.append(f"changed file {n['id']} has no walkthrough block (data-node) in the guide")
     g['meta']['hasGuide'] = True
     return warn
@@ -149,7 +169,7 @@ def main():
         for w in attach_guides(g, guide_html):
             print('warning:', w, file=sys.stderr)
     tpl = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'assets', 'template.html'), encoding='utf-8').read()
-    data = json.dumps(g, ensure_ascii=False).replace('</', '<\\/').replace('<!--', '<\\!--')
+    data = json.dumps(g, ensure_ascii=False).replace('</', '<\\/').replace('<!--', '\\u003c!--')
     title = a.title or f"Change impact map - {g['meta']['repo']}"
     html_mod = tpl.replace('__TITLE__', title.replace('<', '&lt;')).replace('__GRAPH_JSON__', data)
     if guide_html is not None:
